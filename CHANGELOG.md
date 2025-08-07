@@ -38,3 +38,4 @@
 - double-check exit codes behavior
 - double-check release checklist behavior
 - slow start observed while testing
+- cache miss observed while testing
