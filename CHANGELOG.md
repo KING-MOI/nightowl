@@ -37,3 +37,4 @@
 - double-check ci caching behavior
 - double-check exit codes behavior
 - double-check release checklist behavior
+- slow start observed while testing
