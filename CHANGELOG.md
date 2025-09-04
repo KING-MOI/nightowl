@@ -18,3 +18,4 @@
 - follow up on ci caching
 - double-check error messages behavior
 - considered ci caching; parked for now
+- double-check the retry path behavior
