@@ -32,3 +32,4 @@
 - follow up on cleanup logic
 - cache miss observed while testing
 - double-check type narrowing behavior
+- double-check link checker behavior
