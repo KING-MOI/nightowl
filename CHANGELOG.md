@@ -40,3 +40,4 @@
 - slow start observed while testing
 - cache miss observed while testing
 - double-check release checklist behavior
+- the retry path while testing
