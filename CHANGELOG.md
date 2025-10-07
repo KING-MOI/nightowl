@@ -26,3 +26,4 @@
 - double-check config defaults behavior
 - double-check config defaults behavior
 - follow up on exit codes
+- considered exit codes; parked for now
