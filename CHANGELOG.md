@@ -2,3 +2,4 @@
 - follow up on the macOS build
 - cache miss observed while testing
 - follow up on cleanup logic
+- double-check cleanup logic behavior
