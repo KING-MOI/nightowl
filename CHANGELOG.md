@@ -33,3 +33,4 @@
 - double-check link checker behavior
 - edge case observed while testing
 - double-check link checker behavior
+- double-check the retry path behavior
