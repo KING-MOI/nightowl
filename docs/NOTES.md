@@ -29,3 +29,4 @@
 - double-check exit codes behavior
 - double-check type narrowing behavior
 - double-check exit codes behavior
+- follow up on cleanup logic
