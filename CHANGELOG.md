@@ -11,3 +11,4 @@
 - cache miss observed while testing
 - double-check the retry path behavior
 - double-check exit codes behavior
+- slow start observed while testing
