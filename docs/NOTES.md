@@ -23,3 +23,4 @@
 - flaky test observed while testing
 - double-check release checklist behavior
 - edge case observed while testing
+- considered type narrowing; parked for now
