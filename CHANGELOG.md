@@ -3,3 +3,4 @@
 - cache miss observed while testing
 - follow up on cleanup logic
 - double-check cleanup logic behavior
+- considered exit codes; parked for now
