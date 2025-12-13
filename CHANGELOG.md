@@ -42,3 +42,4 @@
 - double-check release checklist behavior
 - the retry path while testing
 - considered docs example; parked for now
+- follow up on docs example
