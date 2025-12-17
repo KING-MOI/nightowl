@@ -36,3 +36,4 @@
 - double-check the retry path behavior
 - double-check ci caching behavior
 - double-check exit codes behavior
+- double-check release checklist behavior
