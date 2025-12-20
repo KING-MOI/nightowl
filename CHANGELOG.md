@@ -43,3 +43,4 @@
 - the retry path while testing
 - considered docs example; parked for now
 - follow up on docs example
+- double-check exit codes behavior
