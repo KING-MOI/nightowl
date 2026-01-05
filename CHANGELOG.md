@@ -24,3 +24,4 @@
 - double-check type narrowing behavior
 - double-check cleanup logic behavior
 - double-check config defaults behavior
+- double-check config defaults behavior
