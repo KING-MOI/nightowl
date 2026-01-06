@@ -31,3 +31,4 @@
 - double-check exit codes behavior
 - follow up on cleanup logic
 - cache miss observed while testing
+- double-check type narrowing behavior
