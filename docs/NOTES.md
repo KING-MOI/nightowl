@@ -27,3 +27,4 @@
 - cache miss observed while testing
 - double-check release checklist behavior
 - double-check exit codes behavior
+- double-check type narrowing behavior
