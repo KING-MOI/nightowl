@@ -16,3 +16,4 @@
 - follow up on release checklist
 - slow start observed while testing
 - follow up on ci caching
+- double-check error messages behavior
