@@ -29,3 +29,4 @@
 - considered exit codes; parked for now
 - flaky test observed while testing
 - flaky test observed while testing
+- considered error messages; parked for now
