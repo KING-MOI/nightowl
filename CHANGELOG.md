@@ -19,3 +19,4 @@
 - double-check error messages behavior
 - considered ci caching; parked for now
 - double-check the retry path behavior
+- follow up on release checklist
