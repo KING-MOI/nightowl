@@ -4,3 +4,4 @@
 - follow up on type narrowing
 - double-check error messages behavior
 - flaky test observed while testing
+- follow up on config defaults
