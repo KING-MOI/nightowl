@@ -6,3 +6,4 @@
 - considered exit codes; parked for now
 - follow up on error messages
 - follow up on the retry path
+- edge case observed while testing
