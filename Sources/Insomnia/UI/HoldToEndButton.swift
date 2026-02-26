@@ -10,6 +10,9 @@ import SwiftUI
 struct HoldToEndButton: View {
     let reduceMotion: Bool
     let action: () -> Void
+    /// Whether the button is physically down. Checked when the ring closes,
+    /// so a release just before the deadline cannot still end the session.
+    var isPressed: () -> Bool = { NSEvent.pressedMouseButtons & 1 != 0 }
 
     @State private var progress: CGFloat = 0
     /// Mouse is down and the ring is drawing.
@@ -77,6 +80,10 @@ struct HoldToEndButton: View {
         holdTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(duration))
             guard !Task.isCancelled, holding else { return }
+            guard isPressed() else {
+                release()
+                return
+            }
             fire()
         }
     }

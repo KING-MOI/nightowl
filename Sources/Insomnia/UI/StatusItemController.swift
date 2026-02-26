@@ -869,9 +869,8 @@ final class StatusHostingView: NSHostingView<StatusRootView> {
     /// the hold-to-end ring never saw a press and the pills opened instead.
     /// SwiftUI reads the location from the window's current event, not from
     /// the one passed to `mouseDown`, so the event has to be replaced before
-    /// dispatch: a local monitor may return a different event. Where the
-    /// system already reports the pointer's position the point does not move
-    /// and the event passes through as it came.
+    /// dispatch: a local monitor may return a different event. Only an event
+    /// at the window's middle is replaced; any other passes through as it came.
     ///
     /// The release has the same problem: the system sends the mouse-up at
     /// once, while the button is still down, so a press-and-hold never lasts.
@@ -914,8 +913,13 @@ final class StatusHostingView: NSHostingView<StatusRootView> {
     }
 
     private func atPointer(_ event: NSEvent, in window: NSWindow) -> NSEvent {
-        let real = pointerInWindow(window)
         let reported = event.locationInWindow
+        // Only the relayed click: it sits at the exact middle of the window.
+        // An event anywhere else is accurate (macOS 26), and the pointer may
+        // have moved since it was queued, so it passes through as it is.
+        let middle = NSPoint(x: window.frame.width / 2, y: window.frame.height / 2)
+        guard abs(reported.x - middle.x) < 1.5, abs(reported.y - middle.y) < 1.5 else { return event }
+        let real = pointerInWindow(window)
         guard hypot(real.x - reported.x, real.y - reported.y) > 2 else { return event }
         return mouseEvent(event.type, at: real, like: event) ?? event
     }

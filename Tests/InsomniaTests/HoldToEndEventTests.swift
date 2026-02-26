@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import XCTest
 @testable import Insomnia
 
@@ -50,7 +51,8 @@ final class HoldToEndEventTests: XCTestCase {
             model: model, manager: manager,
             onTapIcon: { hits.icon += 1 }, onTapPill: { _ in },
             onTapCountdown: { hits.countdown += 1 }, onHoldEnd: { hits.hold += 1 },
-            onWidthChange: { _ in }
+            onWidthChange: { _ in },
+            buttonIsDown: { hardware.buttonDown }
         )
         let host = StatusItemController.makeHostingView(root)
         let size = host.fittingSize
@@ -67,10 +69,10 @@ final class HoldToEndEventTests: XCTestCase {
     }
 
     @MainActor
-    private func deliver(_ type: NSEvent.EventType, _ rig: Rig, number: Int) {
+    private func deliver(_ type: NSEvent.EventType, _ rig: Rig, number: Int, at point: NSPoint? = nil) {
         let centre = NSPoint(x: rig.size.width / 2, y: rig.size.height / 2)
         let event = NSEvent.mouseEvent(
-            with: type, location: centre, modifierFlags: [],
+            with: type, location: point ?? centre, modifierFlags: [],
             timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: rig.window.windowNumber,
             context: nil, eventNumber: number, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1
         )!
@@ -148,5 +150,55 @@ final class HoldToEndEventTests: XCTestCase {
         XCTAssertEqual(rig.hits.summary, "icon=0 countdown=1 hold=0")
         await press(over: rig.icon, for: 0.1, rig)
         XCTAssertEqual(rig.hits.summary, "icon=1 countdown=1 hold=0")
+    }
+
+    /// An event that is not at the item's middle is accurate (macOS 26). If
+    /// the pointer has moved since it was queued, it must not be moved with it.
+    @MainActor
+    func testAnAccurateEventIsNotMovedToWhereThePointerIsNow() async {
+        let harness = Harness()
+        defer { harness.home.destroy() }
+        let rig = await makeRig(harness)
+        defer { rig.window.orderOut(nil) }
+        let y = rig.size.height / 2
+        rig.hardware.buttonDown = true
+        rig.hardware.pointerX = rig.icon
+        deliver(.leftMouseDown, rig, number: 1, at: NSPoint(x: rig.cross, y: y))
+        try? await Task.sleep(for: .seconds(0.9))
+        rig.hardware.buttonDown = false
+        deliver(.leftMouseUp, rig, number: 2, at: NSPoint(x: rig.cross, y: y))
+        try? await Task.sleep(for: .seconds(0.1))
+        XCTAssertEqual(rig.hits.summary, "icon=0 countdown=0 hold=1", "the press stayed on the cross")
+    }
+
+    /// The ring fires on its own timer; the release is only noticed on the
+    /// next poll. A release in between must not end the session.
+    @MainActor
+    func testReleasingBeforeTheRingClosesDoesNotEndTheSessionEvenIfNoReleaseArrived() async {
+        _ = NSApplication.shared
+        for (stillDown, expectedHolds) in [(false, 0), (true, 1)] {
+            var holds = 0
+            var down = true
+            let button = HoldToEndButton(reduceMotion: true, action: { holds += 1 }, isPressed: { down })
+            let host = NSHostingView(rootView: button)
+            let size = host.fittingSize
+            host.frame = NSRect(origin: .zero, size: size)
+            let window = NSWindow(contentRect: NSRect(x: -4000, y: -4000, width: size.width, height: size.height),
+                                  styleMask: [.borderless], backing: .buffered, defer: false)
+            window.contentView = host
+            window.orderFrontRegardless()
+            try? await Task.sleep(for: .seconds(0.3))
+            let centre = NSPoint(x: size.width / 2, y: size.height / 2)
+            NSApp.sendEvent(NSEvent.mouseEvent(
+                with: .leftMouseDown, location: centre, modifierFlags: [],
+                timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
+                context: nil, eventNumber: 1, clickCount: 1, pressure: 1
+            )!)
+            try? await Task.sleep(for: .seconds(0.3))
+            down = stillDown // the button comes up here; no release event is delivered
+            try? await Task.sleep(for: .seconds(0.5))
+            XCTAssertEqual(holds, expectedHolds, "button still down at the deadline: \(stillDown)")
+            window.orderOut(nil)
+        }
     }
 }
