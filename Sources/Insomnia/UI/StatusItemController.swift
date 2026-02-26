@@ -847,11 +847,112 @@ final class StatusItemController: NSObject {
 /// The SwiftUI host covers the status bar button, so the right click has to
 /// be caught here rather than on the button. Ctrl-click is the same gesture
 /// on a one-button mouse.
+private struct EventBox: @unchecked Sendable {
+    let event: NSEvent?
+    init(_ event: NSEvent?) { self.event = event }
+}
+
 final class StatusHostingView: NSHostingView<StatusRootView> {
     var onRightMouseDown: (() -> Void)?
+    /// Where the pointer really is, in the window's coordinates. A test
+    /// replaces it; the app reads the live pointer.
+    var pointerInWindow: (NSWindow) -> NSPoint = { $0.convertPoint(fromScreen: NSEvent.mouseLocation) }
+    /// Whether the left button is physically down right now.
+    var buttonIsDown: () -> Bool = { NSEvent.pressedMouseButtons & 1 != 0 }
+    private var pointerMonitor: Any?
+    private var releaseWatch: Timer?
 
-    override func rightMouseDown(with event: NSEvent) {
-        onRightMouseDown?()
+    /// On macOS 27 a click on a status item reaches the app with its location
+    /// at the middle of the item's window, wherever the pointer was (every
+    /// press logged the window's exact centre, at three different widths).
+    /// SwiftUI hit-tests that point, so every press landed on the countdown:
+    /// the hold-to-end ring never saw a press and the pills opened instead.
+    /// SwiftUI reads the location from the window's current event, not from
+    /// the one passed to `mouseDown`, so the event has to be replaced before
+    /// dispatch: a local monitor may return a different event. Where the
+    /// system already reports the pointer's position the point does not move
+    /// and the event passes through as it came.
+    ///
+    /// The release has the same problem: the system sends the mouse-up at
+    /// once, while the button is still down, so a press-and-hold never lasts.
+    /// That release is held back, and sent when the button really comes up,
+    /// with the pointer's movement in between sent as drags.
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        stopWatchingRelease()
+        if let monitor = pointerMonitor { NSEvent.removeMonitor(monitor) }
+        pointerMonitor = nil
+        guard window != nil else { return }
+        pointerMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp]) { [weak self] event in
+            // Local monitors always run on the main thread; `NSEvent` is not
+            // Sendable, so it crosses `assumeIsolated` in a box.
+            let incoming = EventBox(event)
+            return MainActor.assumeIsolated {
+                // nil is a release held back, so it must not fall back to the original.
+                guard let self else { return incoming }
+                return EventBox(self.route(incoming.event!))
+            }.event
+        }
+    }
+
+    /// What the monitor hands on for `event`: nil holds a release back.
+    private func route(_ event: NSEvent) -> NSEvent? {
+        guard let window, event.window === window else { return event }
+        switch event.type {
+        case .leftMouseDown:
+            stopWatchingRelease()
+        case .leftMouseUp:
+            if buttonIsDown() {
+                watchRelease(like: event, in: window)
+                return nil
+            }
+            stopWatchingRelease()
+        default:
+            break
+        }
+        return atPointer(event, in: window)
+    }
+
+    private func atPointer(_ event: NSEvent, in window: NSWindow) -> NSEvent {
+        let real = pointerInWindow(window)
+        let reported = event.locationInWindow
+        guard hypot(real.x - reported.x, real.y - reported.y) > 2 else { return event }
+        return mouseEvent(event.type, at: real, like: event) ?? event
+    }
+
+    private func mouseEvent(_ type: NSEvent.EventType, at point: NSPoint, like event: NSEvent) -> NSEvent? {
+        NSEvent.mouseEvent(
+            with: type, location: point, modifierFlags: event.modifierFlags,
+            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: event.windowNumber, context: nil,
+            eventNumber: event.eventNumber, clickCount: event.clickCount, pressure: type == .leftMouseUp ? 0 : 1
+        )
+    }
+
+    /// Poll the button and the pointer until the button is really released.
+    private func watchRelease(like event: NSEvent, in window: NSWindow) {
+        stopWatchingRelease()
+        var last = pointerInWindow(window)
+        let template = EventBox(event)
+        let timer = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, let window = self.window else { return }
+                let now = self.pointerInWindow(window)
+                if !self.buttonIsDown() {
+                    self.stopWatchingRelease()
+                    if let up = self.mouseEvent(.leftMouseUp, at: now, like: template.event!) { NSApp.sendEvent(up) }
+                } else if hypot(now.x - last.x, now.y - last.y) >= 1 {
+                    last = now
+                    if let drag = self.mouseEvent(.leftMouseDragged, at: now, like: template.event!) { NSApp.sendEvent(drag) }
+                }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        releaseWatch = timer
+    }
+
+    private func stopWatchingRelease() {
+        releaseWatch?.invalidate()
+        releaseWatch = nil
     }
 
     override func mouseDown(with event: NSEvent) {
@@ -860,5 +961,9 @@ final class StatusHostingView: NSHostingView<StatusRootView> {
             return
         }
         super.mouseDown(with: event)
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        onRightMouseDown?()
     }
 }

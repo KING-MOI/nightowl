@@ -27,15 +27,18 @@ struct HoldToEndButton: View {
 
     var body: some View {
         ZStack {
+            // The label colour, like the eye mark: the menu bar is light or
+            // dark with the wallpaper, so a fixed white ring vanishes on a
+            // light bar and a pale brand tint has no contrast there either.
             Circle()
-                .stroke(Color.white.opacity(0.14), lineWidth: lineWidth)
+                .stroke(Color.primary.opacity(0.25), lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(Color(brand: BrandPalette.violet), style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .stroke(Color.primary, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
             Image(systemName: "xmark")
                 .font(.system(size: 7, weight: .bold))
-                .foregroundStyle(Color.white.opacity(0.85))
+                .foregroundStyle(Color.primary.opacity(0.85))
         }
         .frame(width: ringDiameter, height: ringDiameter)
         .scaleEffect(holding && !reduceMotion ? 1.12 : 1)
