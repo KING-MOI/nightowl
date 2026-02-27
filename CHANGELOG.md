@@ -14,3 +14,4 @@
 - slow start observed while testing
 - double-check ci caching behavior
 - follow up on release checklist
+- slow start observed while testing
