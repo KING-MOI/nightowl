@@ -24,3 +24,4 @@
 - double-check release checklist behavior
 - edge case observed while testing
 - considered type narrowing; parked for now
+- cache miss observed while testing
