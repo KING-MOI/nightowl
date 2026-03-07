@@ -44,3 +44,4 @@
 - considered docs example; parked for now
 - follow up on docs example
 - double-check exit codes behavior
+- double-check config defaults behavior
