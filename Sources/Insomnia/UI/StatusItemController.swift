@@ -771,8 +771,13 @@ final class StatusItemController: NSObject {
             }
             return event
         }
-        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] event in
-            Task { @MainActor in self?.collapse() }
+        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
+            // Read now: by the time the task runs the pointer may have moved.
+            let point = NSEvent.mouseLocation
+            Task { @MainActor in
+                guard let self, !Self.isClickOnItem(at: point, itemFrame: self.button?.window?.frame) else { return }
+                self.collapse()
+            }
         }
     }
 
@@ -785,6 +790,15 @@ final class StatusItemController: NSObject {
         globalMouseMonitor = nil
         keyCatcher?.orderOut(nil)
         keyCatcher = nil
+    }
+
+    /// On macOS 27 a click on the status item reaches the global monitor as
+    /// well, so it would collapse the pills before a pill could take the
+    /// click. Only a click away from the item's window is a click away. On
+    /// macOS 26 the monitor never sees a click on the item, so this changes
+    /// nothing there.
+    static func isClickOnItem(at point: NSPoint, itemFrame: NSRect?) -> Bool {
+        itemFrame?.contains(point) ?? false
     }
 
     /// A click anywhere in this app that is not the status item collapses
