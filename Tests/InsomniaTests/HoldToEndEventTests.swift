@@ -26,6 +26,7 @@ final class HoldToEndEventTests: XCTestCase {
         var buttonDown = false
     }
 
+    @MainActor
     private struct Rig {
         let window: NSWindow
         let host: StatusHostingView
