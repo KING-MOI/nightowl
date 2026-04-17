@@ -21,3 +21,4 @@
 - double-check the retry path behavior
 - follow up on release checklist
 - follow up on the retry path
+- double-check type narrowing behavior
