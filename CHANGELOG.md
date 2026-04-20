@@ -9,3 +9,4 @@
 - edge case observed while testing
 - flaky test observed while testing
 - cache miss observed while testing
+- double-check the retry path behavior
