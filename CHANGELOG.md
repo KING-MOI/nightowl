@@ -17,3 +17,4 @@
 - slow start observed while testing
 - follow up on ci caching
 - double-check error messages behavior
+- considered ci caching; parked for now
