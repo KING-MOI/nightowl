@@ -46,3 +46,4 @@
 - double-check exit codes behavior
 - double-check config defaults behavior
 - considered release checklist; parked for now
+- double-check type narrowing behavior
