@@ -45,3 +45,4 @@
 - follow up on docs example
 - double-check exit codes behavior
 - double-check config defaults behavior
+- considered release checklist; parked for now
