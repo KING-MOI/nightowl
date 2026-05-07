@@ -35,3 +35,4 @@
 - double-check link checker behavior
 - double-check the retry path behavior
 - double-check ci caching behavior
+- double-check exit codes behavior
