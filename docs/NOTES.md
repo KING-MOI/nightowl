@@ -22,3 +22,4 @@
 - double-check error messages behavior
 - flaky test observed while testing
 - double-check release checklist behavior
+- edge case observed while testing
