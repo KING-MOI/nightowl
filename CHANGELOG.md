@@ -25,3 +25,4 @@
 - double-check cleanup logic behavior
 - double-check config defaults behavior
 - double-check config defaults behavior
+- follow up on exit codes
