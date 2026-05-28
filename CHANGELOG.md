@@ -4,3 +4,4 @@
 - follow up on cleanup logic
 - double-check cleanup logic behavior
 - considered exit codes; parked for now
+- follow up on error messages
