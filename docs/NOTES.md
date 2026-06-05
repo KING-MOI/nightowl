@@ -17,3 +17,4 @@
 - cache miss observed while testing
 - flaky test observed while testing
 - considered the retry path; parked for now
+- follow up on docs example
