@@ -34,3 +34,4 @@
 - double-check type narrowing behavior
 - double-check link checker behavior
 - considered type narrowing; parked for now
+- follow up on cleanup logic
