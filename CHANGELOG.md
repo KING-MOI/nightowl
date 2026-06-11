@@ -32,3 +32,4 @@
 - considered error messages; parked for now
 - double-check link checker behavior
 - edge case observed while testing
+- double-check link checker behavior
