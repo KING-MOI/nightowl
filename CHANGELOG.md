@@ -13,3 +13,4 @@
 - double-check exit codes behavior
 - slow start observed while testing
 - double-check ci caching behavior
+- follow up on release checklist
