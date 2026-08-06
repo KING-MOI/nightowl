@@ -31,3 +31,4 @@
 - flaky test observed while testing
 - considered error messages; parked for now
 - double-check link checker behavior
+- edge case observed while testing
