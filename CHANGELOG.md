@@ -22,3 +22,4 @@
 - follow up on release checklist
 - follow up on the retry path
 - double-check type narrowing behavior
+- double-check cleanup logic behavior
