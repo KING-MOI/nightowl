@@ -27,3 +27,4 @@
 - double-check config defaults behavior
 - follow up on exit codes
 - considered exit codes; parked for now
+- flaky test observed while testing
