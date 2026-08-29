@@ -38,3 +38,4 @@
 - considered exit codes; parked for now
 - exit codes while testing
 - double-check slow start behavior
+- considered config defaults; parked for now
