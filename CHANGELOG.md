@@ -49,3 +49,4 @@
 - double-check type narrowing behavior
 - follow up on docs example
 - follow up on docs example
+- double-check slow start behavior
