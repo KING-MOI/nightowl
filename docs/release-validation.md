@@ -19,7 +19,7 @@ The session, recovery, Login Items, lid and network rows ran on the MacBook only
 | Check | Result |
 | --- | --- |
 | Menu bar styles: start, extend, end by holding, one-click start on and off, sounds on and off, and focus kept by the app in front, in Pills, Compact, Minimal and Popover | Passed in the macOS 27 VM, except the rows below. On macOS 26 every part that ran passed; some pending-start, style-change and VoiceOver parts were not run |
-| Right-click and Control-click menus, in Pills, Compact and Minimal | Failed on macOS 26 and 27. The menu opens at the pointer, over the menu bar, not beneath the icon as in 0.1.0. Every row and shortcut works. Known issue, [#174](https://github.com/krishhgg/Insomnia/issues/174) |
+| Right-click and Control-click menus, in Pills, Compact and Minimal | Failed on macOS 26 and 27. The menu opens at the pointer, over the menu bar, not beneath the icon as in 0.1.0. Every row and shortcut works. Known issue, [#174](https://github.com/KING-MOI/Insomnia/issues/174) |
 | Compact: a second click on the eye closes the panel and gives focus back | Passed on macOS 26. In the macOS 27 VM the panel stayed open, with simulated clicks; not checked on macOS 27 hardware |
 | Popover: a right-click outside during a hold closes the popover and keeps the session | Passed on macOS 26. In the macOS 27 VM a stale popover window stayed visible and the session continued; not checked on macOS 27 hardware |
 | Compact and Popover stay open through display sleep | Not run on hardware, since display sleep locks an unattended Mac. In the VM both closed across display sleep, and reopening showed the right time left |
@@ -91,10 +91,10 @@ reported no detected secrets across 175 locally available commits.
 
 ## Remediation evidence
 
-- [CI PR #2](https://github.com/kgarg2468/Insomnia/pull/2), commit
+- [CI PR #2](https://github.com/KING-MOI/Insomnia/pull/2), commit
   `f20a860`: hosted macOS tests/release build, ShellCheck, and Greptile check
   succeeded. No unresolved review threads were present at verification.
-- [Automation PR #3](https://github.com/kgarg2468/Insomnia/pull/3), commit
+- [Automation PR #3](https://github.com/KING-MOI/Insomnia/pull/3), commit
   `52a3b29`: after addressing three Greptile findings and a timeout-reporting
   defect, an independent snapshot passed 206 tests, release compilation, and
   ShellCheck. The three review threads are resolved. Follow-up `ba82712`

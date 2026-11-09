@@ -14,7 +14,7 @@
 # at a time: each pass deletes every clone and runner the loop names.
 set -u
 
-REPO=${INSOMNIA_MINI_REPO:-krishhgg/Insomnia}
+REPO=${INSOMNIA_MINI_REPO:-KING-MOI/Insomnia}
 TART=${TART:-$HOME/.local/bin/tart}
 BASE=${INSOMNIA_MINI_BASE:-insomnia-ci-base}
 LOG_DIR=${INSOMNIA_MINI_LOGS:-$HOME/Library/Logs/insomnia-mini}

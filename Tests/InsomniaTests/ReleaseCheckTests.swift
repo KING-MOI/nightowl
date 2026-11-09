@@ -208,8 +208,8 @@ final class ReleaseCheckTests: XCTestCase {
     func testTheReleasesListDecodesFromGitHubsFields() throws {
         let json = """
         [
-          {"tag_name": "nightly-20261012-db9085ea12a8", "name": "Insomnia nightly 2026-10-12 (db9085ea12a8)", "draft": false, "prerelease": true, "published_at": "2026-10-12T17:00:11Z", "html_url": "https://github.com/krishhgg/Insomnia/releases/tag/nightly-20261012-db9085ea12a8", "assets": []},
-          {"tag_name": "v0.1.0", "name": "Insomnia 0.1.0 (stable)", "draft": false, "prerelease": false, "published_at": "2026-10-10T17:42:47Z", "html_url": "https://github.com/krishhgg/Insomnia/releases/tag/v0.1.0", "assets": []}
+          {"tag_name": "nightly-20261012-db9085ea12a8", "name": "Insomnia nightly 2026-10-12 (db9085ea12a8)", "draft": false, "prerelease": true, "published_at": "2026-10-12T17:00:11Z", "html_url": "https://github.com/KING-MOI/Insomnia/releases/tag/nightly-20261012-db9085ea12a8", "assets": []},
+          {"tag_name": "v0.1.0", "name": "Insomnia 0.1.0 (stable)", "draft": false, "prerelease": false, "published_at": "2026-10-10T17:42:47Z", "html_url": "https://github.com/KING-MOI/Insomnia/releases/tag/v0.1.0", "assets": []}
         ]
         """
 
@@ -223,7 +223,7 @@ final class ReleaseCheckTests: XCTestCase {
 
     func testTheLatestReleaseDecodesAndAMissingOneStaysMissing() throws {
         let json = """
-        {"tag_name": "v0.1.0", "name": "Insomnia 0.1.0 (stable)", "draft": false, "prerelease": false, "published_at": "2026-10-10T17:42:47Z", "html_url": "https://github.com/krishhgg/Insomnia/releases/tag/v0.1.0", "assets": []}
+        {"tag_name": "v0.1.0", "name": "Insomnia 0.1.0 (stable)", "draft": false, "prerelease": false, "published_at": "2026-10-10T17:42:47Z", "html_url": "https://github.com/KING-MOI/Insomnia/releases/tag/v0.1.0", "assets": []}
         """
 
         XCTAssertEqual(try ReleaseChecker.decodeLatest(Data(json.utf8)), GitHubRelease(tagName: "v0.1.0", prerelease: false, publishedAt: "2026-10-10T17:42:47Z"))
@@ -244,9 +244,9 @@ final class ReleaseCheckTests: XCTestCase {
     }
 
     func testTheRequestsAreUnauthenticatedGetsOfTheTwoEndpoints() {
-        XCTAssertEqual(GitHubReleaseFetcher.latestEndpoint.absoluteString, "https://api.github.com/repos/krishhgg/Insomnia/releases/latest")
-        XCTAssertEqual(GitHubReleaseFetcher.listEndpoint.absoluteString, "https://api.github.com/repos/krishhgg/Insomnia/releases?per_page=30")
-        XCTAssertEqual(GitHubReleaseFetcher.releasesPage.absoluteString, "https://github.com/krishhgg/Insomnia/releases")
+        XCTAssertEqual(GitHubReleaseFetcher.latestEndpoint.absoluteString, "https://api.github.com/repos/KING-MOI/Insomnia/releases/latest")
+        XCTAssertEqual(GitHubReleaseFetcher.listEndpoint.absoluteString, "https://api.github.com/repos/KING-MOI/Insomnia/releases?per_page=30")
+        XCTAssertEqual(GitHubReleaseFetcher.releasesPage.absoluteString, "https://github.com/KING-MOI/Insomnia/releases")
 
         for url in [GitHubReleaseFetcher.latestEndpoint, GitHubReleaseFetcher.listEndpoint] {
             let request = GitHubReleaseFetcher.request(url, installed: installed)

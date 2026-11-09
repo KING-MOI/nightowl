@@ -41,6 +41,6 @@
 	<key>InsomniaBackstopCommand</key>
 	<string>--backstop</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>Copyright © 2026 Krish Garg. MIT License.</string>
+	<string>Copyright © 2026 Aditya Verma. MIT License.</string>
 </dict>
 </plist>

@@ -46,7 +46,7 @@ Requires macOS 26 or later on an Apple Silicon Mac.
 Paste this into your coding agent:
 
 ```text
-Install the latest stable Insomnia release by following https://github.com/krishhgg/Insomnia/blob/main/skills/install-insomnia/SKILL.md. If a step needs my password, give me the command to run in Terminal.
+Install the latest stable Insomnia release by following https://github.com/KING-MOI/Insomnia/blob/main/skills/install-insomnia/SKILL.md. If a step needs my password, give me the command to run in Terminal.
 ```
 
 For the newest nightly, write "the newest Insomnia nightly prerelease" in
@@ -65,7 +65,7 @@ Needs Xcode with Swift 6.2 or later. Replace `v<version>` with the latest
 stable tag, or a nightly tag for the newest code:
 
 ```bash
-git clone --branch v<version> --depth 1 https://github.com/krishhgg/Insomnia.git
+git clone --branch v<version> --depth 1 https://github.com/KING-MOI/Insomnia.git
 cd Insomnia
 ./scripts/install.sh
 open "$HOME/Applications/Insomnia.app"
@@ -323,11 +323,11 @@ settings. See [Contributing](CONTRIBUTING.md), [Security reporting](SECURITY.md)
 
 ## Star history
 
-<a href="https://www.star-history.com/?repos=krishhgg%2FInsomnia&amp;type=date&amp;legend=top-left">
+<a href="https://www.star-history.com/?repos=KING-MOI%2FInsomnia&amp;type=date&amp;legend=top-left">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=krishhgg/insomnia&amp;type=date&amp;theme=dark&amp;legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=krishhgg/insomnia&amp;type=date&amp;legend=top-left" />
-    <img alt="Star history for krishhgg/Insomnia" src="https://api.star-history.com/svg?repos=krishhgg/insomnia&amp;type=date&amp;legend=top-left" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=KING-MOI/insomnia&amp;type=date&amp;theme=dark&amp;legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=KING-MOI/insomnia&amp;type=date&amp;legend=top-left" />
+    <img alt="Star history for KING-MOI/Insomnia" src="https://api.star-history.com/svg?repos=KING-MOI/insomnia&amp;type=date&amp;legend=top-left" />
   </picture>
 </a>
 

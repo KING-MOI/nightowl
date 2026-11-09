@@ -195,8 +195,8 @@ final class ReleaseWorkflowTests: XCTestCase {
         let stub = """
             if [[ $# -eq 5 && $1 == api && $2 == --paginate && $4 == --jq ]]; then
               case "$3" in
-                repos/krishhgg/Insomnia/git/matching-refs/tags/nightly-) exec /bin/cat "$here/refs" ;;
-                "repos/krishhgg/Insomnia/releases?per_page=100") exec /bin/cat "$here/releases" ;;
+                repos/KING-MOI/Insomnia/git/matching-refs/tags/nightly-) exec /bin/cat "$here/refs" ;;
+                "repos/KING-MOI/Insomnia/releases?per_page=100") exec /bin/cat "$here/releases" ;;
               esac
             fi
             """
@@ -237,16 +237,16 @@ final class ReleaseWorkflowTests: XCTestCase {
         let script = try stepScript("nightly", "Create the tag and the prerelease")
         let sha = "0123456789abcdef0123456789abcdef01234567"
         let tag = "nightly-20261009-0123456789ab"
-        let post = "api repos/krishhgg/Insomnia/git/refs -f ref=refs/tags/\(tag) -f sha=\(sha) --silent"
-        let get = "api repos/krishhgg/Insomnia/git/ref/tags/\(tag) --jq .object.sha"
-        let create = "release create \(tag) release/Insomnia-0.1.0-\(tag)-macos.zip release/SHA256SUMS --repo krishhgg/Insomnia"
+        let post = "api repos/KING-MOI/Insomnia/git/refs -f ref=refs/tags/\(tag) -f sha=\(sha) --silent"
+        let get = "api repos/KING-MOI/Insomnia/git/ref/tags/\(tag) --jq .object.sha"
+        let create = "release create \(tag) release/Insomnia-0.1.0-\(tag)-macos.zip release/SHA256SUMS --repo KING-MOI/Insomnia"
             + " --title Insomnia nightly 2026-10-09 (0123456789ab) --notes-file notes.md --verify-tag --prerelease --latest=false"
         // Creating the ref exits with the status in create-status; reading it
         // prints the file `at`, or fails as GitHub does when there is none.
         let stub = """
             case "$1 $2" in
-              "api repos/krishhgg/Insomnia/git/refs") exit "$(/bin/cat "$here/create-status")" ;;
-              "api repos/krishhgg/Insomnia/git/ref/tags/\(tag)")
+              "api repos/KING-MOI/Insomnia/git/refs") exit "$(/bin/cat "$here/create-status")" ;;
+              "api repos/KING-MOI/Insomnia/git/ref/tags/\(tag)")
                 [[ -e $here/at ]] || { echo "gh: Not Found (HTTP 404)" >&2; exit 1; }
                 exec /bin/cat "$here/at" ;;
               "release create") exit 0 ;;
@@ -338,7 +338,7 @@ final class ReleaseWorkflowTests: XCTestCase {
         p.currentDirectoryURL = root
         p.environment = environment.merging([
             "PATH": "\(bin.path):/usr/bin:/bin", "TMPDIR": NSTemporaryDirectory(),
-            "GITHUB_REPOSITORY": "krishhgg/Insomnia", "GITHUB_OUTPUT": outputURL.path,
+            "GITHUB_REPOSITORY": "KING-MOI/Insomnia", "GITHUB_OUTPUT": outputURL.path,
         ]) { _, fixed in fixed }
         // Capture to files rather than pipes: nothing to drain, nothing to deadlock.
         let err = try FileHandle(forWritingTo: errURL)
@@ -413,7 +413,7 @@ final class ReleaseWorkflowTests: XCTestCase {
     /// notes.
     func testTheReadmeOffersBothChannelsAndSetsV010Apart() throws {
         let install = try readmeInstallSection().split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        for phrase in ["Install the latest stable Insomnia release by following https://github.com/krishhgg/Insomnia/blob/main/skills/install-insomnia/SKILL.md",
+        for phrase in ["Install the latest stable Insomnia release by following https://github.com/KING-MOI/Insomnia/blob/main/skills/install-insomnia/SKILL.md",
                        "the newest Insomnia nightly prerelease", "](docs/install.md)"] {
             XCTAssertTrue(install.contains(phrase), "the README's Install section lacks: \(phrase)")
         }
