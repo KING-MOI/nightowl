@@ -15,7 +15,7 @@
 #                        any comment the bot wrote (GitHub records who made
 #                        it, and a collaborator can edit anyone's comment).
 #   merge-gate/accepted  The owner added the "accepted" label: they want the
-#                        change in Insomnia. The newest add or removal of the
+#                        change in Nightowl. The newest add or removal of the
 #                        label must be the owner adding it.
 #   merge-gate/evidence  The maintainer checked a real-Mac report for the
 #                        head, or the head changes only paths that never run
@@ -63,7 +63,7 @@
 #       in the few seconds of the check's last reads and the merge does not
 #       stop it.
 #
-# Environment: GH_REPO (default KING-MOI/Insomnia). DRY_RUN=1 prints the
+# Environment: GH_REPO (default KING-MOI/Nightowl). DRY_RUN=1 prints the
 # statuses evaluate and post would send instead of sending them.
 #
 # Runs under macOS /bin/bash 3.2 and the bash on GitHub's Ubuntu runners;
@@ -77,7 +77,7 @@ die() {
   exit 2
 }
 
-REPO=${GH_REPO:-KING-MOI/Insomnia}
+REPO=${GH_REPO:-KING-MOI/Nightowl}
 OWNER=${REPO%%/*}
 case $OWNER in
   '' | *[!A-Za-z0-9-]*) die "unexpected repository owner in GH_REPO: $REPO" ;;

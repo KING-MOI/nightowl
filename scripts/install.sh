@@ -1,8 +1,8 @@
 #!/bin/bash
-# Install Insomnia: put Insomnia.app (with backstop.sh sealed inside it) in
+# Install Nightowl: put Nightowl.app (with backstop.sh sealed inside it) in
 # ~/Applications, install the LaunchAgent that verifies the bundle and runs
 # that script, and write the sudoers rule. Idempotent; asks for sudo once (for
-# /etc/sudoers.d/insomnia), before anything of a previous install is touched.
+# /etc/sudoers.d/nightowl), before anything of a previous install is touched.
 # The bundle and the LaunchAgent are replaced together, in one locked step
 # (the agent pins one build, so the two must match at every moment), and a
 # run that stops after that step began puts the previous bundle back. Not
@@ -14,7 +14,7 @@
 #                                             (scripts/build-app.sh, ad-hoc
 #                                             signed); only from a checkout's
 #                                             scripts/ folder (in_checkout)
-#   ./install.sh --app /path/to/Insomnia.app  installs a prebuilt bundle, such
+#   ./install.sh --app /path/to/Nightowl.app  installs a prebuilt bundle, such
 #                                             as the one in a release zip
 #                                             (arm64 only, so this stops on a
 #                                             Mac without Apple Silicon), after
@@ -35,11 +35,11 @@
 set -euo pipefail
 
 # Installation always uses the standard per-user layout. A relocated
-# INSOMNIA_HOME would make the backstop run here act on one tree while the
+# NIGHTOWL_HOME would make the backstop run here act on one tree while the
 # app is installed against another, so refuse rather than guess.
-if [[ -n "${INSOMNIA_HOME:-}" ]]; then
-  echo "INSOMNIA_HOME is set ($INSOMNIA_HOME). install.sh only supports the standard layout under ~/Library;" >&2
-  echo "unset INSOMNIA_HOME and rerun. Nothing was changed." >&2
+if [[ -n "${NIGHTOWL_HOME:-}" ]]; then
+  echo "NIGHTOWL_HOME is set ($NIGHTOWL_HOME). install.sh only supports the standard layout under ~/Library;" >&2
+  echo "unset NIGHTOWL_HOME and rerun. Nothing was changed." >&2
   exit 1
 fi
 
@@ -73,33 +73,33 @@ LOCK_TIMEOUT_SECONDS=10
 CALL_TIMEOUT_SECONDS=30
 
 # What a prebuilt bundle (--app) must be.
-BUNDLE_ID=com.kgarg.insomnia
+BUNDLE_ID=com.adityaverma.nightowl
 
 # The folder this script is in. build-app.sh and backstop.sh are taken from
 # there, and only when it is the scripts/ folder of a source checkout, with
 # Package.swift one level up (in_checkout). A release zip's folder is not: it
-# holds Insomnia.app, install.sh and uninstall.sh, so a build-app.sh found
+# holds Nightowl.app, install.sh and uninstall.sh, so a build-app.sh found
 # beside this script there was added after the zip was unpacked, for example
 # by another account that created the folder in /tmp beforehand. Never the
-# folder above either: a zip unpacked at /tmp/Insomnia-<version> would make
+# folder above either: a zip unpacked at /tmp/Nightowl-<version> would make
 # that /tmp, where any account can create scripts/build-app.sh.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 in_checkout() { [[ "${SCRIPT_DIR##*/}" == scripts && -f "${SCRIPT_DIR%/*}/Package.swift" ]]; }
 APP_DIR="$HOME/Applications"
-APP="$APP_DIR/Insomnia.app"
-APP_SUPPORT="$HOME/Library/Application Support/Insomnia"
-LOG_DIR="$HOME/Library/Logs/Insomnia"
+APP="$APP_DIR/Nightowl.app"
+APP_SUPPORT="$HOME/Library/Application Support/Nightowl"
+LOG_DIR="$HOME/Library/Logs/Nightowl"
 LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
-LABEL="com.insomnia.backstop"
+LABEL="com.nightowl.backstop"
 PLIST="$LAUNCH_AGENTS/$LABEL.plist"
-SUDOERS=/etc/sudoers.d/insomnia
+SUDOERS=/etc/sudoers.d/nightowl
 UID_NUM="$(id -u)"
 # Where the new bundle is assembled and signed (step 3) and where the previous
 # one waits during the swap (step 6). Both inside $APP_DIR, so the swap is two
 # renames on one filesystem. The staging directory's name carries the PID of
 # the run that made it, so a later run can tell a dead run's leftover from
 # the directory of an install that is still running (step 5).
-PREVIOUS_APP="$APP_DIR/.Insomnia.app.previous"
+PREVIOUS_APP="$APP_DIR/.Nightowl.app.previous"
 STAGE=""
 NEW_APP=""
 # Where build-app.sh writes a source build before it is staged.
@@ -110,7 +110,7 @@ CANDIDATE_DIR=""
 WORK=""
 
 step() { printf '\n==> %s\n' "$*"; }
-usage() { echo "usage: $0 [--app /path/to/Insomnia.app [--allow-unverified-origin]]" >&2; }
+usage() { echo "usage: $0 [--app /path/to/Nightowl.app [--allow-unverified-origin]]" >&2; }
 # A command for the user to paste, each word quoted for the shell, so a space,
 # quote or $ in a path stays part of that path.
 command_line() { local line; line="$(printf '%q ' "$@")"; printf '%s' "${line% }"; }
@@ -240,8 +240,8 @@ if (( ALLOW_UNVERIFIED_ORIGIN )) && [[ -z "$PREBUILT" ]]; then
   usage
   exit 2
 fi
-if [[ "${INSOMNIA_LID_SIMULATION:-}" == 1 && -n "$PREBUILT" ]]; then
-  echo "INSOMNIA_LID_SIMULATION=1 applies to a source build only; the bundle given with --app is already compiled. Nothing was changed." >&2
+if [[ "${NIGHTOWL_LID_SIMULATION:-}" == 1 && -n "$PREBUILT" ]]; then
+  echo "NIGHTOWL_LID_SIMULATION=1 applies to a source build only; the bundle given with --app is already compiled. Nothing was changed." >&2
   exit 2
 fi
 
@@ -282,7 +282,7 @@ pmset_rule_effective() {
 }
 
 # Kong's Insomnia API client runs an executable named Insomnia too, so
-# `pgrep -x Insomnia` finds it as well. A pid pgrep found is skipped only
+# `pgrep -x Nightowl` finds it as well. A pid pgrep found is skipped only
 # when `codesign --verify` passes it against API_CLIENT_REQUIREMENT: the
 # code the process runs is signed with a certificate Apple issued (such as
 # Developer ID), with the client's identifier and Kong's team in the leaf
@@ -331,7 +331,7 @@ only_api_client() { # pgrep-output bounded|direct
 # step 5 asks again under the lock.
 app_running() {
   local pids
-  pids="$("$PGREP" -x Insomnia 2>/dev/null)" || return 1
+  pids="$("$PGREP" -x Nightowl 2>/dev/null)" || return 1
   if only_api_client "$pids" direct; then return 1; fi
   return 0
 }
@@ -349,7 +349,7 @@ cleanup() {
 }
 trap cleanup EXIT
 # Scratch space for bounded(): this run's own directory, emptied on exit.
-WORK="$("$MKTEMP" -d "${TMPDIR:-/tmp}/insomnia-install.XXXXXX")"
+WORK="$("$MKTEMP" -d "${TMPDIR:-/tmp}/nightowl-install.XXXXXX")"
 
 # 1. The bundle to install ---------------------------------------------------
 #    Built or verified before the password prompt: nothing on the machine has
@@ -362,7 +362,7 @@ if [[ -n "$PREBUILT" ]]; then
   # Mac reads 0 or has no such key.
   arm64="$("$SYSCTL" -n hw.optional.arm64 2>/dev/null || true)"
   if [[ "$arm64" != 1 ]]; then
-    echo "Release bundles of Insomnia run on Apple Silicon Macs only, and this Mac is not one ('sysctl -n hw.optional.arm64' gave ${arm64:-no value}). Build and install from a source checkout instead (README, Build from source). Nothing was changed." >&2
+    echo "Release bundles of Nightowl run on Apple Silicon Macs only, and this Mac is not one ('sysctl -n hw.optional.arm64' gave ${arm64:-no value}). Build and install from a source checkout instead (README, Build from source). Nothing was changed." >&2
     exit 1
   fi
   if [[ ! -d "$PREBUILT" || ! -f "$PREBUILT/Contents/Info.plist" ]]; then
@@ -374,7 +374,7 @@ if [[ -n "$PREBUILT" ]]; then
   # shared folder, /tmp); a bundle swapped there while the password prompt
   # waits is never copied in. BUILD_DIR is removed at exit, as for a build.
   BUILD_DIR="$("$MKTEMP" -d)"
-  CHECKED_APP="$BUILD_DIR/Insomnia.app"
+  CHECKED_APP="$BUILD_DIR/Nightowl.app"
   if ! "$DITTO" "$PREBUILT" "$CHECKED_APP"; then
     echo "could not copy $PREBUILT to check it. Nothing was changed." >&2
     exit 1
@@ -411,13 +411,13 @@ if [[ -n "$PREBUILT" ]]; then
   # check, so every prebuilt bundle needs --allow-unverified-origin, the flag
   # that says they did.
   if (( ALLOW_UNVERIFIED_ORIGIN )); then
-    echo "WARNING: the origin of Insomnia $PREBUILT_VERSION is not verified. Its signature shows the bundle is intact, not who made it."
+    echo "WARNING: the origin of Nightowl $PREBUILT_VERSION is not verified. Its signature shows the bundle is intact, not who made it."
     echo "--allow-unverified-origin: installing it anyway. Its backstop.sh will run as you at login and every 60 s."
     echo "Continue only if you checked the zip yourself with SHA256SUMS and 'gh attestation verify' (README, Install)."
     echo "Releases are not notarized, so macOS blocks the first launch of a downloaded one until you allow it in System Settings > Privacy & Security."
   else
     cat >&2 <<REFUSE
-The origin of Insomnia $PREBUILT_VERSION at $PREBUILT is not verified. Its signature shows the bundle is
+The origin of Nightowl $PREBUILT_VERSION at $PREBUILT is not verified. Its signature shows the bundle is
 intact, not who made it: anyone can sign a bundle with this identifier, and this install.sh cannot tell
 where it came from. Installing it would run its backstop.sh as you at login and every 60 s. Nothing was changed.
 Verify the zip yourself first ('shasum -a 256 -c SHA256SUMS' and 'gh attestation verify' with --signer-workflow,
@@ -437,7 +437,7 @@ else
   fi
   BUILD_DIR="$("$MKTEMP" -d)"
   "$SCRIPT_DIR/build-app.sh" --output "$BUILD_DIR"
-  SOURCE_APP="$BUILD_DIR/Insomnia.app"
+  SOURCE_APP="$BUILD_DIR/Nightowl.app"
 fi
 
 # 2. sudoers -----------------------------------------------------------------
@@ -447,7 +447,7 @@ fi
 step "Writing $SUDOERS (requires your password once)"
 TMP_SUDOERS="$("$MKTEMP")"
 cat > "$TMP_SUDOERS" <<SUDO
-# Installed by Insomnia install.sh. Exactly four commands, nothing else.
+# Installed by Nightowl install.sh. Exactly four commands, nothing else.
 $USER ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 1
 $USER ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0
 $USER ALL=(root) NOPASSWD: /usr/bin/pmset -b lowpowermode 1
@@ -481,30 +481,30 @@ fi
 #    replaced in step 6, in the same locked step as the LaunchAgent: the
 #    agent pins one build's requirement, so the bundle at $APP and the loaded
 #    agent must be a matching pair before, during and after a failed run.
-step "Staging Insomnia.app"
+step "Staging Nightowl.app"
 # Ask the app to quit and wait until it has actually exited. It refuses to
 # quit while it has unresolved recovery work; that refusal stands (no pkill),
 # and nothing of the old install is overwritten while it is still running.
 if app_running; then
-  echo "Insomnia is running; quitting it first (this ends any session)."
-  "$OSASCRIPT" -e 'tell application id "com.kgarg.insomnia" to quit' >/dev/null 2>&1 || true
+  echo "Nightowl is running; quitting it first (this ends any session)."
+  "$OSASCRIPT" -e 'tell application id "com.adityaverma.nightowl" to quit' >/dev/null 2>&1 || true
   for (( i = 0; i < QUIT_WAIT_SECONDS; i++ )); do
     app_running || break
     sleep 1
   done
   if app_running; then
-    echo "Insomnia is still running after ${QUIT_WAIT_SECONDS}s (it may be refusing to quit until its own recovery finishes)." >&2
+    echo "Nightowl is still running after ${QUIT_WAIT_SECONDS}s (it may be refusing to quit until its own recovery finishes)." >&2
     echo "Let it finish or quit it from its menu, then rerun. $SUDOERS is installed; the app (with backstop.sh) and the LaunchAgent were not touched." >&2
     exit 1
   fi
 fi
 "$MKDIR" -p "$APP_DIR"
-STAGE="$("$MKTEMP" -d "$APP_DIR/.Insomnia.app.staging.$$.XXXXXX")"
-NEW_APP="$STAGE/Insomnia.app"
+STAGE="$("$MKTEMP" -d "$APP_DIR/.Nightowl.app.staging.$$.XXXXXX")"
+NEW_APP="$STAGE/Nightowl.app"
 # The bundle is copied here whole and reaches $APP in one rename under the
 # recovery lock (step 5), so backstop.sh never sees this binary beside an
 # older Info.plist or the reverse (it runs the binary's --resume-frozen mode
-# only once Info.plist declares InsomniaResumeFrozenVersion).
+# only once Info.plist declares NightowlResumeFrozenVersion).
 # ditto keeps the signature's resource seal and every attribute intact (a
 # downloaded bundle keeps its quarantine flag; Gatekeeper decides at launch).
 "$DITTO" "$SOURCE_APP" "$NEW_APP"
@@ -575,15 +575,15 @@ fi
 # A pgrep that cannot answer does not say the app is gone, so the run stops.
 # Finding only the API client is finding none.
 pgrep_rc=0
-bounded "$PGREP" -x Insomnia || pgrep_rc=$?
+bounded "$PGREP" -x Nightowl || pgrep_rc=$?
 if (( pgrep_rc == 0 )) && only_api_client "$BOUNDED_OUTPUT" bounded; then
   pgrep_rc=1
 fi
 if (( pgrep_rc == 0 )); then
-  echo "Insomnia started again; quit it and rerun. The app at $APP and the LaunchAgent were not touched." >&2
+  echo "Nightowl started again; quit it and rerun. The app at $APP and the LaunchAgent were not touched." >&2
   exit 1
 elif (( pgrep_rc != 1 )); then
-  echo "pgrep $(call_result "$pgrep_rc"), so whether Insomnia started again is unknown. The app at $APP and the LaunchAgent were not touched; rerun." >&2
+  echo "pgrep $(call_result "$pgrep_rc"), so whether Nightowl started again is unknown. The app at $APP and the LaunchAgent were not touched; rerun." >&2
   exit 1
 fi
 # The rule was verified in step 2, before this run waited for the lock. An
@@ -662,8 +662,8 @@ fi
 # alive belongs to an install that is still assembling its bundle and has
 # not reached this lock yet, so it stays. kill -0 only asks whether the
 # process exists; it sends no signal.
-staging_re='^\.Insomnia\.app\.staging\.([0-9]+)\.[A-Za-z0-9]{6}$'
-for dir in "$APP_DIR"/.Insomnia.app.staging.*; do
+staging_re='^\.Nightowl\.app\.staging\.([0-9]+)\.[A-Za-z0-9]{6}$'
+for dir in "$APP_DIR"/.Nightowl.app.staging.*; do
   [[ -d "$dir" && ! -L "$dir" && "$dir" != "$STAGE" ]] || continue
   [[ "${dir##*/}" =~ $staging_re ]] || continue
   if "$KILL" -0 "${BASH_REMATCH[1]}" 2>/dev/null; then
@@ -747,7 +747,7 @@ Install stopped: the backstop could not fully undo a previous session
 (exit status $recovery_rc). $pair_note
 Installed so far: $SUDOERS.
 $agent_note
-Check $LOG_DIR/insomnia.log and resolve what it reports. Saved audio, display
+Check $LOG_DIR/nightowl.log and resolve what it reports. Saved audio, display
 brightness or keyboard backlight needs the app; if one is installed, open it:
   $(command_line open "$APP")
 $manual_step
@@ -889,12 +889,12 @@ fi
 # 6. LaunchAgent: verifies the bundle and runs its sealed backstop at load
 #    and every 60 s. The backstop enforces the saved deadline itself and is
 #    a no-op while the session on disk is valid. The plist's ProgramArguments
-#    start `Insomnia --backstop "$REQUIREMENT"` without the UI, so Login
+#    start `Nightowl --backstop "$REQUIREMENT"` without the UI, so Login
 #    Items associates the agent with the app instead of a system shell.
 #    Older bundles without that mode keep the shell launcher. The program
 #    runs `codesign --verify --strict -R=<requirement>` on the bundle and
 #    execs Contents/Resources/backstop.sh only when that passes; otherwise it
-#    logs one line to $LOG_DIR/insomnia.log and exits 1 without running
+#    logs one line to $LOG_DIR/nightowl.log and exits 1 without running
 #    anything. AGENT_PROGRAM must stay byte for byte what LaunchdBackstop.swift
 #    writes (LaunchdBackstopTests compares them), or the app reloads the agent
 #    at every session start. Same pattern as the app for the file itself: the
@@ -919,7 +919,7 @@ CANDIDATE="$CANDIDATE_DIR/$LABEL.candidate-$$.plist"
 before="$(loaded_state)"
 
 # shellcheck disable=SC2016  # the $1/$2/$HOME/$r below are for the agent's shell, not this one
-AGENT_PROGRAM='r="$(/usr/bin/codesign --verify --strict "-R=$1" "$2" 2>&1)" && exec /bin/bash "$2/Contents/Resources/backstop.sh"; mkdir -p "$HOME/Library/Logs/Insomnia"; printf "%s [error] backstop agent: %s does not satisfy the pinned code requirement; backstop.sh not run. Reinstall Insomnia (scripts/install.sh). codesign: %s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" "$(printf %s "$r" | tr "\n" " ")" >> "$HOME/Library/Logs/Insomnia/insomnia.log"; exit 1'
+AGENT_PROGRAM='r="$(/usr/bin/codesign --verify --strict "-R=$1" "$2" 2>&1)" && exec /bin/bash "$2/Contents/Resources/backstop.sh"; mkdir -p "$HOME/Library/Logs/Nightowl"; printf "%s [error] backstop agent: %s does not satisfy the pinned code requirement; backstop.sh not run. Reinstall Nightowl (scripts/install.sh). codesign: %s\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$2" "$(printf %s "$r" | tr "\n" " ")" >> "$HOME/Library/Logs/Nightowl/nightowl.log"; exit 1'
 AGENT_ARGUMENTS=(/bin/sh -c "$AGENT_PROGRAM" sh "$REQUIREMENT" "$APP")
 # Only complete cdhash requirements can become a pre-execution constraint.
 # Unknown clauses keep the external verifier, as in LaunchdBackstop.swift.
@@ -937,7 +937,7 @@ launch_hashes() {
   done
 }
 LAUNCH_HASHES="$(launch_hashes)" || LAUNCH_HASHES=""
-NATIVE_BACKSTOP="$("$PLUTIL" -extract InsomniaBackstopCommand raw -o - "$NEW_APP/Contents/Info.plist" 2>/dev/null || true)"
+NATIVE_BACKSTOP="$("$PLUTIL" -extract NightowlBackstopCommand raw -o - "$NEW_APP/Contents/Info.plist" 2>/dev/null || true)"
 EXECUTABLE_NAME="$("$PLUTIL" -extract CFBundleExecutable raw -o - "$NEW_APP/Contents/Info.plist" 2>/dev/null || true)"
 AGENT_EXECUTABLE=""
 case "$EXECUTABLE_NAME" in
@@ -1223,6 +1223,6 @@ Next steps:
   1. Launch:            $(command_line open "$APP")
   2. Optional:          System Settings > Wi-Fi > Ask to join hotspots: Automatically
   3. Config lives at:   $APP_SUPPORT/config.json
-  4. Logs:              $LOG_DIR/insomnia.log
+  4. Logs:              $LOG_DIR/nightowl.log
   5. Uninstall:         $(command_line "$UNINSTALL")
 NEXT

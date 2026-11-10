@@ -2,15 +2,15 @@
 
 The [README](../README.md#install) has the short version. This page has every
 step and what each one checks. A coding agent can follow
-[skills/install-insomnia](../skills/install-insomnia/SKILL.md), which uses the
+[skills/install-nightowl](../skills/install-nightowl/SKILL.md), which uses the
 steps on this page.
 
 Requires **macOS 26 or later on an Apple Silicon Mac**.
 
 ## Channels
 
-Insomnia is published on two channels on the
-[releases page](https://github.com/KING-MOI/Insomnia/releases):
+Nightowl is published on two channels on the
+[releases page](https://github.com/KING-MOI/Nightowl/releases):
 
 - Stable: the release GitHub marks Latest, tagged `v<version>`. Use this one
   unless you want to try changes that are not in a stable release yet.
@@ -24,8 +24,8 @@ Each release's notes give the exact commands for that release. One release
 differs from the steps below: `v0.1.0`, the first stable release, was packaged
 by hand from the maintainer's installed app, not by the Release workflow. It
 has no attestation, and its zip installs with
-`./scripts/install.sh --app ./Insomnia.app`. If the release you picked is
-`v0.1.0` (its zip is `Insomnia-0.1.0-macos-arm64.zip`), follow the install
+`./scripts/install.sh --app ./Nightowl.app`. If the release you picked is
+`v0.1.0` (its zip is `Nightowl-0.1.0-macos-arm64.zip`), follow the install
 steps in its release notes instead of steps 2 and 3.
 
 The rest of this page describes releases built by the Release workflow and
@@ -44,7 +44,7 @@ You need `gh`, the [GitHub CLI](https://cli.github.com).
    one marked Latest:
 
    ```bash
-   gh release download --repo KING-MOI/Insomnia --pattern '*.zip' --pattern SHA256SUMS
+   gh release download --repo KING-MOI/Nightowl --pattern '*.zip' --pattern SHA256SUMS
    ```
 
    For the newest nightly, paste this whole block. It reads every page of
@@ -55,9 +55,9 @@ You need `gh`, the [GitHub CLI](https://cli.github.com).
    back to the stable release.
 
    ```bash
-   insomnia_nightly() {
+   nightowl_nightly() {
      local list tag
-     list="$(gh api --paginate 'repos/KING-MOI/Insomnia/releases?per_page=100' \
+     list="$(gh api --paginate 'repos/KING-MOI/Nightowl/releases?per_page=100' \
        --jq '.[] | select(.prerelease and (.draft | not) and (.tag_name | startswith("nightly-")))
          | "\(.published_at) \(.tag_name)"')" ||
        { echo "Could not read the release list. Nothing was downloaded." >&2; return 1; }
@@ -72,9 +72,9 @@ You need `gh`, the [GitHub CLI](https://cli.github.com).
        printf 'Unexpected nightly tag: %s. Nothing was downloaded.\n' "$tag" >&2
        return 1
      fi
-     gh release download "$tag" --repo KING-MOI/Insomnia --pattern '*.zip' --pattern SHA256SUMS
+     gh release download "$tag" --repo KING-MOI/Nightowl --pattern '*.zip' --pattern SHA256SUMS
    }
-   insomnia_nightly
+   nightowl_nightly
    ```
 
    If the releases page has no release yet, build from source (below).
@@ -86,8 +86,8 @@ You need `gh`, the [GitHub CLI](https://cli.github.com).
 
    ```bash
    shasum -a 256 -c SHA256SUMS
-   gh attestation verify <zip> -R KING-MOI/Insomnia \
-     --signer-workflow KING-MOI/Insomnia/.github/workflows/release.yml \
+   gh attestation verify <zip> -R KING-MOI/Nightowl \
+     --signer-workflow KING-MOI/Nightowl/.github/workflows/release.yml \
      --source-ref <ref> --source-digest <commit>
    ```
 
@@ -103,8 +103,8 @@ You need `gh`, the [GitHub CLI](https://cli.github.com).
    ```bash
    ditto -x -k <zip> .
    cd <the zip's name without .zip>
-   ./install.sh --allow-unverified-origin --app ./Insomnia.app
-   open "$HOME/Applications/Insomnia.app"
+   ./install.sh --allow-unverified-origin --app ./Nightowl.app
+   open "$HOME/Applications/Nightowl.app"
    ```
 
    Releases are ad-hoc signed and not notarized. The installer can check that
@@ -117,7 +117,7 @@ The installer checks the bundle's signature, identifier and version before it
 asks for anything (the `v0.1.0` installer checks the signature and
 identifier, not the version). It then installs the app and a background recovery agent,
 and asks for administrator access to install a narrowly scoped sudoers rule. It grants
-**your user account**, not just Insomnia, passwordless access to four
+**your user account**, not just Nightowl, passwordless access to four
 power-setting commands. Review that permission before installing.
 
 Release zips are built for arm64 only, and their `install.sh --app` stops on
@@ -131,10 +131,10 @@ nightly tag for the newest code, rather than `main`. If the releases page has
 no release yet, leave out `--branch v<version>` to build `main`:
 
 ```bash
-git clone --branch v<version> --depth 1 https://github.com/KING-MOI/Insomnia.git
-cd Insomnia
+git clone --branch v<version> --depth 1 https://github.com/KING-MOI/Nightowl.git
+cd Nightowl
 ./scripts/install.sh
-open "$HOME/Applications/Insomnia.app"
+open "$HOME/Applications/Nightowl.app"
 ```
 
 `scripts/install.sh` builds the same bundle the release workflow builds
@@ -160,7 +160,7 @@ the Command Line Tools or Xcode removes them too.
 This describes releases built by the Release workflow and builds of the
 current source. `v0.1.0` installs an older layout. Its app has no
 `backstop.sh` inside it: its installer copies `backstop.sh` into
-`~/Library/Application Support/Insomnia/`, and its recovery agent runs that
+`~/Library/Application Support/Nightowl/`, and its recovery agent runs that
 copy with `/bin/bash` without checking any code signature. The sealed script,
 the pinned code requirement and the refusal of an edited or re-signed bundle
 described below do not apply to it, and neither does the upgrade procedure.
@@ -169,11 +169,11 @@ describes what it installs and its limits.
 
 | Location | Purpose |
 | --- | --- |
-| `~/Applications/Insomnia.app` | The menu bar app, with `backstop.sh` sealed inside it at `Contents/Resources` |
-| `~/Library/Application Support/Insomnia/` | Configuration and the session/recovery journals |
-| `~/Library/LaunchAgents/com.insomnia.backstop.plist` | Per-user recovery agent: verifies the app's code signature, then runs the sealed `backstop.sh` |
-| `~/Library/Logs/Insomnia/` | `insomnia.log` and `handoffs.log`, each capped at 1 MiB with one older copy kept as `.1`, unless you replace it with a symlink |
-| `/etc/sudoers.d/insomnia` | Permission for the four commands below |
+| `~/Applications/Nightowl.app` | The menu bar app, with `backstop.sh` sealed inside it at `Contents/Resources` |
+| `~/Library/Application Support/Nightowl/` | Configuration and the session/recovery journals |
+| `~/Library/LaunchAgents/com.nightowl.backstop.plist` | Per-user recovery agent: verifies the app's code signature, then runs the sealed `backstop.sh` |
+| `~/Library/Logs/Nightowl/` | `nightowl.log` and `handoffs.log`, each capped at 1 MiB with one older copy kept as `.1`, unless you replace it with a symlink |
+| `/etc/sudoers.d/nightowl` | Permission for the four commands below |
 
 ```text
 /usr/bin/pmset -a disablesleep 1
@@ -182,7 +182,7 @@ describes what it installs and its limits.
 /usr/bin/pmset -b lowpowermode 0
 ```
 
-The grant is available to other processes running as your user. Insomnia is not
+The grant is available to other processes running as your user. Nightowl is not
 sandboxed. The app, scripts, and journals are local; hotspot passwords use the
 login Keychain, not the configuration file.
 
@@ -200,10 +200,10 @@ requires System Integrity Protection to be enabled. The installer and each
 session's `arm()` check `csrutil status`; disabled, custom or unavailable
 status selects the external shell verifier instead. That agent runs
 `/bin/sh`, so Login Items & Extensions lists it as `sh` with a generic icon,
-not as Insomnia. After changing SIP,
+not as Nightowl. After changing SIP,
 open the app and start a session or reinstall to replace a previously
 registered native agent. An edited sealed script
-is refused by the subsequent full-bundle check and logged in `insomnia.log`.
+is refused by the subsequent full-bundle check and logged in `nightowl.log`.
 Older bundles and other code-requirement formats keep the external shell
 verifier. Reinstall to restore the matching bundle/agent pair.
 So no other account can edit it, the installer removes group
@@ -243,7 +243,7 @@ previous bundle back, so the loaded agent always matches the installed app. A
 bundle that cannot be moved during that step is handled the same way: the
 previous bundle goes back and its agent is loaded again. If the previous bundle
 itself cannot be moved back, nothing is deleted: it stays at
-`~/Applications/.Insomnia.app.previous`, the installer prints the two commands
+`~/Applications/.Nightowl.app.previous`, the installer prints the two commands
 that put it back and load its agent, and until then the agent finds no app, so
 run them or rerun the installer before you log out. If
 the unload is not confirmed, the new bundle stays with the agent that pins it
@@ -274,12 +274,12 @@ From your checkout:
 
 ```bash
 ./scripts/uninstall.sh
-# Also remove Insomnia-owned configuration and logs:
+# Also remove Nightowl-owned configuration and logs:
 ./scripts/uninstall.sh --purge
 ```
 
 From the unpacked release zip, run `./uninstall.sh` (or `./uninstall.sh
---purge`) in its folder (`Insomnia-<version>-macos`, or the nightly name). A
+--purge`) in its folder (`Nightowl-<version>-macos`, or the nightly name). A
 checkout's uninstaller (in `scripts`, with `Package.swift` one level up) runs
 the `backstop.sh` beside it. Anywhere else, such as the zip's folder, the
 uninstaller runs only the copy sealed in the installed app, after `codesign
@@ -288,14 +288,14 @@ when there is none. The zip has no `backstop.sh`, so one added beside its
 uninstaller is not run. Neither looks in the folder above its own.
 
 The `v0.1.0` zip is different: run `./scripts/uninstall.sh` in its unpacked
-`Insomnia-0.1.0-macos-arm64` folder, as its release notes say. That older
+`Nightowl-0.1.0-macos-arm64` folder, as its release notes say. That older
 uninstaller runs the `scripts/backstop.sh` in the same folder.
 
 The uninstaller requests cleanup before removing the app, agent, and sudoers
 rule. If recovery is incomplete or the app refuses to quit, it stops; resolve
 the reported problem and retry. With the app it removes what an interrupted
-install left beside it: `~/Applications/.Insomnia.app.previous`, and
-`.Insomnia.app.staging.*` directories of installs that are no longer running.
+install left beside it: `~/Applications/.Nightowl.app.previous`, and
+`.Nightowl.app.staging.*` directories of installs that are no longer running.
 Nothing else in `~/Applications` is touched. Purge removes owned files, not arbitrary
 directory contents. A small shared lock file is retained to keep concurrent
 recovery operations coordinated.

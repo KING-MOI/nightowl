@@ -1,0 +1,808 @@
+import XCTest
+@testable import Nightowl
+
+final class ConfigTests: XCTestCase {
+    /// `Config()` as a config.json from an earlier build decodes without the
+    /// key under test: no lid-close update yet, and a missing mute key read
+    /// as off, as those builds read it.
+    private func earlierBuild() -> Config {
+        var c = Config()
+        c.lidCloseDefaultsApplied = false
+        c.muteOnLidClose = false
+        return c
+    }
+
+    func testDefaults() {
+        let c = Config()
+        XCTAssertFalse(c.compactMode)
+        XCTAssertEqual(c.presets, [1800, 3600, 7200, 14400, 28800, 43200, 86400, 259200])
+        XCTAssertEqual(c.lowPowerFloor, 40)
+        XCTAssertEqual(c.endFloor, 10)
+        XCTAssertEqual(c.nudgeThreshold, 90)
+        XCTAssertEqual(c.maxDuration, 30 * 24 * 3600)
+        XCTAssertEqual(c.freezeList, ["com.tinyspeck.slackmacgap", "net.whatsapp.WhatsApp", "com.hnc.Discord"])
+        XCTAssertTrue(c.agentList.contains("com.apple.Terminal"))
+        XCTAssertTrue(c.agentList.contains("com.t3tools.t3code"))
+        XCTAssertTrue(c.agentList.contains("com.docker.docker"))
+        XCTAssertTrue(c.agentList.contains("com.microsoft.VSCode"))
+        XCTAssertTrue(c.agentList.contains("com.todesktop.230313mzl4w4u92"))
+        XCTAssertTrue(c.agentList.contains("io.tailscale.ipn.macsys"))
+        XCTAssertFalse(c.dockerRule, "the Docker rule is opt in")
+        XCTAssertTrue(c.muteOnLidClose, "mute on lid close is on by default")
+        XCTAssertTrue(c.lidCloseDefaultsApplied, "a config this build creates never needs the lid-close update")
+        XCTAssertNil(c.lidCloseDefaultsNotice)
+        XCTAssertTrue(c.darkenDisplayOnLidClose)
+        XCTAssertFalse(c.freezeAllApps, "freeze-all is opt in")
+        XCTAssertTrue(c.lowPowerOnLidClose)
+        XCTAssertTrue(c.thermalRules)
+        XCTAssertTrue(c.thermalHoldUntilNominal, "the heat hold is on by default")
+        XCTAssertFalse(c.disableAppNapForAgents, "writing other apps' preferences is opt-in")
+        XCTAssertEqual(c.hotspotSSID, "")
+        XCTAssertEqual(c.tmuxTargets, [])
+        XCTAssertFalse(c.tmuxNudgePressesEnter)
+        XCTAssertFalse(c.launchAtLogin)
+    }
+
+    /// Enter after `continue` is opt-in: a config.json written before the
+    /// key existed, or without it, keeps it off; an explicit true is honoured.
+    /// Keeping the screen awake leaves the Mac unlocked, so it is opt-in: a
+    /// config.json without the key keeps it off; an explicit true is honoured.
+    func testKeepScreenAwakeDecodesAndDefaultsOff() throws {
+        XCTAssertFalse(Config().keepScreenAwake)
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"tmuxTargets": ["agents:0.0"]}"#.utf8))
+        XCTAssertFalse(legacy.keepScreenAwake)
+        let on = try Store.makeDecoder().decode(Config.self, from: Data(#"{"keepScreenAwake": true}"#.utf8))
+        XCTAssertTrue(on.keepScreenAwake)
+        var expected = earlierBuild()
+        expected.keepScreenAwake = true
+        XCTAssertEqual(on, expected)
+        let data = try Store.makeEncoder().encode(on)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), on)
+    }
+
+    func testTmuxNudgePressesEnterDecodesAndDefaultsOff() throws {
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"tmuxTargets": ["agents:0.0"]}"#.utf8))
+        XCTAssertFalse(legacy.tmuxNudgePressesEnter)
+        XCTAssertEqual(legacy.tmuxTargets, ["agents:0.0"])
+        let on = try Store.makeDecoder().decode(Config.self, from: Data(#"{"tmuxNudgePressesEnter": true}"#.utf8))
+        XCTAssertTrue(on.tmuxNudgePressesEnter)
+        var expected = earlierBuild()
+        expected.tmuxNudgePressesEnter = true
+        XCTAssertEqual(on, expected)
+        let data = try Store.makeEncoder().encode(on)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), on)
+    }
+
+    // MARK: App rules
+
+    /// Edit Apps shows one row per app: a rule puts the app on exactly one
+    /// list, and removing it takes it off both.
+    func testSetRuleKeepsEachAppOnOneList() {
+        var config = Config()
+        config.setRule(.freeze, for: "com.conductor.app")
+        XCTAssertFalse(config.agentList.contains("com.conductor.app"))
+        XCTAssertEqual(config.freezeList.last, "com.conductor.app")
+        XCTAssertEqual(config.rule(for: "com.conductor.app"), .freeze)
+        config.setRule(.keepRunning, for: "com.conductor.app")
+        XCTAssertEqual(config.rule(for: "com.conductor.app"), .keepRunning)
+        XCTAssertFalse(config.freezeList.contains("com.conductor.app"))
+        config.setRule(nil, for: "com.conductor.app")
+        XCTAssertNil(config.rule(for: "com.conductor.app"))
+        XCTAssertFalse(config.listedApps.contains("com.conductor.app"))
+    }
+
+    /// The rule an app already has changes nothing, so the lists keep their
+    /// order and Settings saves nothing.
+    func testSettingTheSameRuleChangesNothing() {
+        var config = Config()
+        let before = config
+        config.setRule(.keepRunning, for: "com.conductor.app")
+        config.setRule(.freeze, for: "com.tinyspeck.slackmacgap")
+        XCTAssertEqual(config, before)
+    }
+
+    /// Edit Apps adds an app as Keep running and leaves a listed app's rule
+    /// alone. Terminal, removed from the defaults, can come back, so App
+    /// Nap covers it again.
+    func testAddingAnAppKeepsItRunningAndAnAppleAppCanComeBack() {
+        var config = Config()
+        config.setRule(nil, for: "com.apple.Terminal")
+        config.addApp("com.apple.Terminal")
+        XCTAssertEqual(config.rule(for: "com.apple.Terminal"), .keepRunning)
+        XCTAssertEqual(config.agentList.last, "com.apple.Terminal")
+
+        let before = config
+        config.addApp("com.tinyspeck.slackmacgap")
+        config.addApp("com.conductor.app")
+        XCTAssertEqual(config, before)
+        XCTAssertEqual(config.rule(for: "com.tinyspeck.slackmacgap"), .freeze)
+    }
+
+    /// An older or hand-edited config.json can name an app on both lists.
+    /// It keeps running, as the freeze planner treats it, so Edit Apps lists
+    /// it once and the Settings summaries name it only under Keep running.
+    /// Either rule then leaves it on one list: Keep running takes it off the
+    /// freeze list and keeps its place on the agent list.
+    func testAnAppOnBothListsHasOneRuleAndPickingEitherCleansItUp() {
+        var config = Config()
+        config.freezeList.append("com.conductor.app")
+        XCTAssertEqual(config.rule(for: "com.conductor.app"), .keepRunning)
+        XCTAssertEqual(config.listedApps.filter { $0 == "com.conductor.app" }.count, 1)
+        XCTAssertEqual(config.apps(with: .keepRunning), Config.defaultAgentList)
+        XCTAssertEqual(config.apps(with: .freeze), Config.defaultFreezeList)
+
+        var kept = config
+        kept.setRule(.keepRunning, for: "com.conductor.app")
+        XCTAssertEqual(kept.agentList, Config.defaultAgentList)
+        XCTAssertEqual(kept.freezeList, Config.defaultFreezeList)
+
+        config.setRule(.freeze, for: "com.conductor.app")
+        XCTAssertFalse(config.agentList.contains("com.conductor.app"))
+        XCTAssertEqual(config.freezeList.filter { $0 == "com.conductor.app" }.count, 1)
+    }
+
+    /// An older config.json can name an Apple app or Docker Desktop on the
+    /// freeze list alone. The freeze planner never freezes them from the
+    /// list, so Edit Apps and the summaries show Keep running, and the
+    /// row's Remove button (`setRule(nil, for:)`) clears the entry.
+    func testAppsThePlannerNeverFreezesShowAsKeepRunning() {
+        var config = Config()
+        config.agentList = ["com.conductor.app"]
+        config.freezeList = ["com.apple.TextEdit", FreezePlanner.dockerBundleId, "com.hnc.Discord"]
+        XCTAssertEqual(config.rule(for: "com.apple.TextEdit"), .keepRunning)
+        XCTAssertEqual(config.rule(for: FreezePlanner.dockerBundleId), .keepRunning)
+        XCTAssertEqual(config.apps(with: .freeze), ["com.hnc.Discord"])
+        XCTAssertEqual(
+            config.apps(with: .keepRunning),
+            ["com.conductor.app", "com.apple.TextEdit", FreezePlanner.dockerBundleId])
+
+        config.setRule(nil, for: "com.apple.TextEdit")
+        XCTAssertNil(config.rule(for: "com.apple.TextEdit"))
+        XCTAssertFalse(config.freezeList.contains("com.apple.TextEdit"))
+    }
+
+    /// The battery menus offer Never and every step, and keep a level a
+    /// hand-edited config.json holds between steps.
+    func testFloorChoicesOfferEveryStepAndKeepTheCurrentLevel() {
+        XCTAssertEqual(Config.floorChoices(through: 15, keeping: 10), [0, 5, 10, 15])
+        let end = Config.floorChoices(through: Config.maxEndFloor, keeping: 37)
+        XCTAssertEqual(end.filter { $0 > 30 && $0 < 45 }, [35, 37, 40])
+        XCTAssertEqual(end.last, Config.maxEndFloor)
+        XCTAssertEqual(Config.floorChoices(through: 100, keeping: 40).last, 100)
+    }
+
+    /// The heat hold is on for a config.json written before the key
+    /// existed; an explicit false is honoured and survives a save.
+    func testThermalHoldUntilNominalDecodesAndDefaultsOn() throws {
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"thermalRules": true}"#.utf8))
+        XCTAssertTrue(legacy.thermalHoldUntilNominal)
+        let off = try Store.makeDecoder().decode(Config.self, from: Data(#"{"thermalHoldUntilNominal": false}"#.utf8))
+        XCTAssertFalse(off.thermalHoldUntilNominal)
+        let data = try Store.makeEncoder().encode(off)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), off)
+    }
+
+    // MARK: Battery floors
+
+    func testDefaultFloorsAreOrdered() {
+        XCTAssertTrue(Config().floorsAreOrdered)
+        XCTAssertEqual(Config.floorStep, 5)
+        XCTAssertEqual(Config.maxEndFloor, 95)
+    }
+
+    /// Raising the end floor onto or past the Low Power Mode floor pushes
+    /// that floor one step up; the end floor itself stops at 95.
+    func testRaisingEndFloorPushesLowPowerFloorUp() {
+        var c = Config()
+        c.setEndFloor(35)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [40, 35])
+        c.setEndFloor(40)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [45, 40])
+        c.setEndFloor(70)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [75, 70])
+        c.setEndFloor(100)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [100, 95])
+        c.setEndFloor(-5)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [100, 0])
+        XCTAssertTrue(c.floorsAreOrdered)
+    }
+
+    /// Lowering the Low Power Mode floor onto or past the end floor pulls
+    /// the end floor one step down, to 0 (off) at the bottom.
+    func testLoweringLowPowerFloorPullsEndFloorDown() {
+        var c = Config()
+        c.setLowPowerFloor(15)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [15, 10])
+        c.setLowPowerFloor(10)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [10, 5])
+        c.setLowPowerFloor(5)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [5, 0])
+        c.setLowPowerFloor(0)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [0, 0])
+        c.setLowPowerFloor(150)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [100, 0])
+        XCTAssertTrue(c.floorsAreOrdered)
+    }
+
+    /// What the caption under "End the session below" says: Never (0) for
+    /// Low Power Mode turns the end off in one step.
+    func testNeverForLowPowerModeTurnsTheEndOff() {
+        var c = Config()
+        XCTAssertGreaterThan(c.endFloor, 0)
+        c.setLowPowerFloor(0)
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [0, 0])
+    }
+
+    /// An end floor of 0 is off and stays off wherever the other floor goes.
+    func testEndFloorOffIsNotMovedByTheLowPowerFloor() {
+        var c = Config()
+        c.setEndFloor(0)
+        for v in [100, 40, 5, 0] {
+            c.setLowPowerFloor(v)
+            XCTAssertEqual(c.endFloor, 0, "lowPowerFloor \(v)")
+            XCTAssertTrue(c.floorsAreOrdered)
+        }
+    }
+
+    /// Decoding keeps whatever the file says; normalization is a separate
+    /// step that fixes the order by raising the Low Power Mode floor and
+    /// reports the change.
+    func testNormalizeFloorsCorrectsAnOutOfOrderFile() throws {
+        var c = try Store.makeDecoder().decode(Config.self, from: Data(#"{"lowPowerFloor": 40, "endFloor": 60}"#.utf8))
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [40, 60])
+        XCTAssertFalse(c.floorsAreOrdered)
+
+        let change = c.normalizeFloors()
+
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [65, 60])
+        XCTAssertEqual(change, "battery floors corrected: lowPowerFloor 40 -> 65, endFloor 60 -> 60")
+        XCTAssertTrue(c.floorsAreOrdered)
+    }
+
+    func testNormalizeFloorsClampsOutOfRangeValues() {
+        var c = Config()
+        c.lowPowerFloor = 140
+        c.endFloor = 100
+        XCTAssertEqual(c.normalizeFloors(), "battery floors corrected: lowPowerFloor 140 -> 100, endFloor 100 -> 95")
+        XCTAssertEqual([c.lowPowerFloor, c.endFloor], [100, 95])
+
+        var d = Config()
+        d.endFloor = -3
+        XCTAssertEqual(d.normalizeFloors(), "battery floors corrected: lowPowerFloor 40 -> 40, endFloor -3 -> 0")
+        XCTAssertEqual([d.lowPowerFloor, d.endFloor], [40, 0])
+
+        var e = Config()
+        e.lowPowerFloor = 40
+        e.endFloor = 40
+        XCTAssertEqual(e.normalizeFloors(), "battery floors corrected: lowPowerFloor 40 -> 45, endFloor 40 -> 40")
+    }
+
+    func testNormalizeFloorsLeavesAnOrderedConfigAlone() {
+        for (low, end) in [(40, 10), (5, 0), (0, 0), (100, 95), (100, 0)] {
+            var c = Config()
+            c.lowPowerFloor = low
+            c.endFloor = end
+            XCTAssertNil(c.normalizeFloors(), "\(low)/\(end)")
+            XCTAssertEqual([c.lowPowerFloor, c.endFloor], [low, end])
+        }
+    }
+
+    func testPartialJSONFillsDefaults() throws {
+        let data = Data(#"{"lowPowerFloor": 25}"#.utf8)
+        let c = try Store.makeDecoder().decode(Config.self, from: data)
+        var expected = earlierBuild()
+        expected.lowPowerFloor = 25
+        XCTAssertEqual(c, expected)
+    }
+
+    func testLowPowerOnLidCloseDecodesAndDefaultsOn() throws {
+        let off = try Store.makeDecoder().decode(Config.self, from: Data(#"{"lowPowerOnLidClose": false}"#.utf8))
+        XCTAssertFalse(off.lowPowerOnLidClose)
+        // A config written before the key existed keeps the default.
+        let old = try Store.makeDecoder().decode(Config.self, from: Data(#"{"muteOnLidClose": true}"#.utf8))
+        XCTAssertTrue(old.lowPowerOnLidClose)
+        XCTAssertTrue(old.muteOnLidClose)
+    }
+
+    /// A config.json without the key (older build, or written by hand)
+    /// gets the default, off: an upgrade never opts anyone in. An explicit
+    /// true is honoured and round-trips.
+    func testDockerRuleDecodesTolerantly() throws {
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"muteOnLidClose": true}"#.utf8))
+        XCTAssertFalse(legacy.dockerRule, "a missing key must not opt the user in")
+        let on = try Store.makeDecoder().decode(Config.self, from: Data(#"{"dockerRule": true}"#.utf8))
+        XCTAssertTrue(on.dockerRule)
+        var expected = earlierBuild()
+        expected.dockerRule = true
+        XCTAssertEqual(on, expected)
+        let data = try Store.makeEncoder().encode(on)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), on)
+        let off = try Store.makeDecoder().decode(Config.self, from: Data(#"{"dockerRule": false}"#.utf8))
+        XCTAssertFalse(off.dockerRule)
+    }
+
+    /// An empty object is what an earlier build saved minus every key. It
+    /// decodes to the defaults as those builds read them, and the lid-close
+    /// update then brings it to this build's defaults, reporting the mute.
+    func testEmptyObjectIsDefaultsOnceUpdated() throws {
+        var c = try Store.makeDecoder().decode(Config.self, from: Data("{}".utf8))
+        XCTAssertEqual(c, earlierBuild())
+        XCTAssertEqual(c.applyLidCloseDefaults(), LidCloseDefaultsChange(turnedOffFreezeAll: false, turnedOnMute: true))
+        c.lidCloseDefaultsNotice = nil
+        XCTAssertEqual(c, Config())
+    }
+
+    /// A config.json this build saved carries the mark; a missing mute key
+    /// there (a hand edit) gets this build's default, on.
+    func testThisBuildsConfigWithoutMuteKeyIsMutedByDefault() throws {
+        let c = try Store.makeDecoder().decode(Config.self, from: Data(#"{"lidCloseDefaultsApplied": true}"#.utf8))
+        XCTAssertEqual(c, Config())
+        XCTAssertTrue(c.muteOnLidClose)
+        let data = try Store.makeEncoder().encode(Config())
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(json["lidCloseDefaultsApplied"] as? Bool, true, "the mark must reach config.json")
+        XCTAssertEqual(json["muteOnLidClose"] as? Bool, true)
+    }
+
+    // MARK: Lid-close update
+
+    /// The maintainer's config: freeze-all on (saved when it was the
+    /// default) and mute off. Both change, once, and the notice is kept.
+    func testLidCloseUpdateTurnsFreezeAllOffAndMuteOnOnce() throws {
+        var c = try Store.makeDecoder().decode(Config.self, from: Data(#"{"freezeAllApps": true, "muteOnLidClose": false, "dockerRule": true}"#.utf8))
+        XCTAssertFalse(c.lidCloseDefaultsApplied)
+        let change = c.applyLidCloseDefaults()
+        XCTAssertEqual(change, LidCloseDefaultsChange(turnedOffFreezeAll: true, turnedOnMute: true))
+        XCTAssertFalse(c.freezeAllApps)
+        XCTAssertTrue(c.muteOnLidClose)
+        XCTAssertTrue(c.lidCloseDefaultsApplied)
+        XCTAssertEqual(c.lidCloseDefaultsNotice, change)
+        XCTAssertTrue(c.dockerRule, "nothing else changes")
+
+        // The user turns both back: the update never runs again.
+        c.freezeAllApps = true
+        c.muteOnLidClose = false
+        XCTAssertNil(c.applyLidCloseDefaults())
+        XCTAssertTrue(c.freezeAllApps)
+        XCTAssertFalse(c.muteOnLidClose)
+        let reloaded = try Store.makeDecoder().decode(Config.self, from: Store.makeEncoder().encode(c))
+        XCTAssertEqual(reloaded, c, "the mark and the notice round-trip")
+    }
+
+    /// Only what actually changes is reported; a config already set the new
+    /// way is marked with no notice.
+    func testLidCloseUpdateReportsOnlyWhatChanged() throws {
+        var muteOnly = try Store.makeDecoder().decode(Config.self, from: Data(#"{"freezeAllApps": false, "muteOnLidClose": false}"#.utf8))
+        XCTAssertEqual(muteOnly.applyLidCloseDefaults(), LidCloseDefaultsChange(turnedOffFreezeAll: false, turnedOnMute: true))
+        var freezeOnly = try Store.makeDecoder().decode(Config.self, from: Data(#"{"freezeAllApps": true, "muteOnLidClose": true}"#.utf8))
+        XCTAssertEqual(freezeOnly.applyLidCloseDefaults(), LidCloseDefaultsChange(turnedOffFreezeAll: true, turnedOnMute: false))
+        var already = try Store.makeDecoder().decode(Config.self, from: Data(#"{"freezeAllApps": false, "muteOnLidClose": true}"#.utf8))
+        XCTAssertNil(already.applyLidCloseDefaults())
+        XCTAssertTrue(already.lidCloseDefaultsApplied)
+        XCTAssertNil(already.lidCloseDefaultsNotice)
+    }
+
+    /// The notice names each change and where to change it back.
+    func testLidCloseNoticeNamesTheChangesAndWhereToChangeThemBack() {
+        let both = LidCloseDefaultsChange(turnedOffFreezeAll: true, turnedOnMute: true)
+        XCTAssertEqual(LidCloseDefaultsChange.title, "Lid-close settings changed")
+        let bothChanges = "\"All other apps\" now keep running when the lid closes and \"Mute audio\" is now on."
+        let bothPlaces = "Mute audio is under When the lid closes, and All other apps is behind the Edit Apps\u{2026} button."
+        XCTAssertEqual(both.notificationBody, "This update changed two lid-close settings: \(bothChanges) To change them back, choose Settings\u{2026} from the Nightowl menu bar icon. \(bothPlaces)")
+        XCTAssertEqual(both.settingsLine, "This update changed two lid-close settings: \(bothChanges) \(bothPlaces)")
+        let mute = LidCloseDefaultsChange(turnedOffFreezeAll: false, turnedOnMute: true)
+        XCTAssertEqual(mute.notificationBody, "This update changed a lid-close setting: \"Mute audio\" is now on. To change it back, choose Settings\u{2026} from the Nightowl menu bar icon. Mute audio is under When the lid closes.")
+        XCTAssertEqual(mute.settingsLine, "This update changed a lid-close setting: \"Mute audio\" is now on. Mute audio is under When the lid closes.")
+        let freeze = LidCloseDefaultsChange(turnedOffFreezeAll: true, turnedOnMute: false)
+        XCTAssertEqual(freeze.changes, "\"All other apps\" now keep running when the lid closes")
+        XCTAssertEqual(freeze.settingsLine, "This update changed a lid-close setting: \"All other apps\" now keep running when the lid closes. All other apps is behind the Edit Apps\u{2026} button.")
+    }
+
+    /// Lock-screen-on-close is off for a config.json without the key and
+    /// survives a save and load when on.
+    func testLockScreenOnLidCloseDefaultsOffAndRoundTrips() throws {
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"muteOnLidClose": true}"#.utf8))
+        XCTAssertFalse(legacy.lockScreenOnLidClose)
+        XCTAssertFalse(Config().lockScreenOnLidClose)
+        var on = Config()
+        on.lockScreenOnLidClose = true
+        let data = try Store.makeEncoder().encode(on)
+        let back = try Store.makeDecoder().decode(Config.self, from: data)
+        XCTAssertTrue(back.lockScreenOnLidClose)
+        XCTAssertEqual(back, on)
+    }
+
+    func testCompactModeDefaultsOffForOlderConfigs() throws {
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"presets": [600], "defaultPreset": 600}"#.utf8))
+        XCTAssertFalse(legacy.compactMode)
+        XCTAssertEqual(legacy.presets, [600])
+        XCTAssertEqual(legacy.defaultPreset, 600)
+    }
+
+    func testCompactModePersistsAcrossReloadAndCanBeTurnedOff() throws {
+        let home = TempHome()
+        defer { home.destroy() }
+        let store = Store(paths: home.paths)
+        var config = Config()
+        config.compactMode = true
+        config.hotspotSSID = "iPhone"
+        config.presets = [600]
+        try store.saveConfig(config)
+
+        let reloaded = try XCTUnwrap(Store(paths: home.paths).loadConfig())
+        XCTAssertTrue(reloaded.compactMode)
+        XCTAssertEqual(reloaded, config, "Changing presentation mode preserves the other settings")
+
+        config.compactMode = false
+        try store.saveConfig(config)
+        XCTAssertEqual(try Store(paths: home.paths).loadConfig(), config)
+    }
+
+    /// A config.json written before the display toggle existed keeps the
+    /// default (on); an explicit false is honoured.
+    func testDarkenDisplayDecodesTolerantly() throws {
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"muteOnLidClose": true}"#.utf8))
+        XCTAssertTrue(legacy.darkenDisplayOnLidClose)
+        let off = try Store.makeDecoder().decode(Config.self, from: Data(#"{"darkenDisplayOnLidClose": false}"#.utf8))
+        XCTAssertFalse(off.darkenDisplayOnLidClose)
+        var expected = earlierBuild()
+        expected.darkenDisplayOnLidClose = false
+        XCTAssertEqual(off, expected)
+        let data = try Store.makeEncoder().encode(off)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), off)
+    }
+
+    /// A config.json without the freeze-all key (written before the toggle
+    /// existed, or by hand) gets the default, off: nobody is opted in to the
+    /// automatic scope by an upgrade. An explicit true is honoured.
+    func testFreezeAllAppsDecodesTolerantly() throws {
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"freezeList": ["com.hnc.Discord"]}"#.utf8))
+        XCTAssertFalse(legacy.freezeAllApps, "a missing key must not opt the user in")
+        XCTAssertEqual(legacy.freezeList, ["com.hnc.Discord"])
+        let on = try Store.makeDecoder().decode(Config.self, from: Data(#"{"freezeAllApps": true}"#.utf8))
+        XCTAssertTrue(on.freezeAllApps)
+        var expected = earlierBuild()
+        expected.freezeAllApps = true
+        XCTAssertEqual(on, expected)
+        let data = try Store.makeEncoder().encode(on)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), on)
+        let off = try Store.makeDecoder().decode(Config.self, from: Data(#"{"freezeAllApps": false}"#.utf8))
+        XCTAssertFalse(off.freezeAllApps)
+    }
+
+    /// A config.json written before the App Nap opt-in existed keeps the
+    /// default (off); an explicit true is honoured and round-trips.
+    func testDisableAppNapDecodesTolerantlyAndDefaultsOff() throws {
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"agentList": ["com.google.Chrome"]}"#.utf8))
+        XCTAssertFalse(legacy.disableAppNapForAgents)
+        XCTAssertEqual(legacy.agentList, ["com.google.Chrome"])
+        let on = try Store.makeDecoder().decode(Config.self, from: Data(#"{"disableAppNapForAgents": true}"#.utf8))
+        XCTAssertTrue(on.disableAppNapForAgents)
+        var expected = earlierBuild()
+        expected.disableAppNapForAgents = true
+        XCTAssertEqual(on, expected)
+        let data = try Store.makeEncoder().encode(on)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), on)
+    }
+
+    /// One-click start is opt-in: a config.json without the key keeps it
+    /// off; an explicit true is honoured and round-trips.
+    func testOneClickStartDecodesAndDefaultsOff() throws {
+        XCTAssertFalse(Config().oneClickStart)
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"menuBarMode": "compact"}"#.utf8))
+        XCTAssertFalse(legacy.oneClickStart)
+        XCTAssertEqual(legacy.menuBarMode, .compact)
+        let on = try Store.makeDecoder().decode(Config.self, from: Data(#"{"oneClickStart": true}"#.utf8))
+        XCTAssertTrue(on.oneClickStart)
+        var expected = earlierBuild()
+        expected.oneClickStart = true
+        XCTAssertEqual(on, expected)
+        let data = try Store.makeEncoder().encode(on)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), on)
+    }
+
+    /// The start and end sounds are opt-in: a config.json without the key
+    /// keeps them off; an explicit true is honoured and round-trips.
+    func testSessionSoundsDecodeAndDefaultOff() throws {
+        XCTAssertFalse(Config().sessionSounds)
+        let legacy = try Store.makeDecoder().decode(Config.self, from: Data(#"{"launchAtLogin": true}"#.utf8))
+        XCTAssertFalse(legacy.sessionSounds)
+        let on = try Store.makeDecoder().decode(Config.self, from: Data(#"{"sessionSounds": true}"#.utf8))
+        XCTAssertTrue(on.sessionSounds)
+        var expected = earlierBuild()
+        expected.sessionSounds = true
+        XCTAssertEqual(on, expected)
+        let data = try Store.makeEncoder().encode(on)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), on)
+    }
+
+    /// Cheap typo guard for the shipped defaults: no duplicates, and every
+    /// id looks like a reverse-DNS bundle id with a lowercase first label.
+    func testDefaultListsAreUniqueReverseDNSIds() throws {
+        let pattern = #"^[a-z][a-z0-9-]*(\.[A-Za-z0-9_-]+)+$"#
+        // Webex's real id starts with an uppercase label (read from the
+        // installed app); it is the one exception.
+        let uppercaseFirstLabel: Set<String> = ["Cisco-Systems.Spark"]
+        for (name, ids) in [("agentList", Config.defaultAgentList), ("freezeList", Config.defaultFreezeList), ("builtInProtected", Array(FreezePlanner.builtInProtected))] {
+            XCTAssertEqual(Set(ids).count, ids.count, "\(name) has duplicates")
+            for id in ids where !uppercaseFirstLabel.contains(id) {
+                XCTAssertNotNil(id.range(of: pattern, options: .regularExpression), "\(name): \(id) does not look like a bundle id")
+            }
+        }
+        for prefix in FreezePlanner.builtInProtectedPrefixes {
+            XCTAssertTrue(prefix.hasSuffix("."), "a protected prefix must end at a label boundary: \(prefix)")
+            if uppercaseFirstLabel.contains(String(prefix.dropLast())) { continue }
+            XCTAssertNotNil(String(prefix.dropLast()).range(of: pattern, options: .regularExpression), "builtInProtectedPrefixes: \(prefix) does not look like a bundle id prefix")
+        }
+    }
+
+    func testRoundTrip() throws {
+        var c = Config()
+        c.hotspotSSID = "iPhone"
+        c.tmuxTargets = ["main:0.1"]
+        c.presets = [60]
+        let data = try Store.makeEncoder().encode(c)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), c)
+    }
+
+    /// The install on file for the login item is absent in configs written
+    /// before it existed, decodes as nil, and round-trips when set.
+    func testLaunchAtLoginInstallIsOptional() throws {
+        XCTAssertNil(Config().launchAtLoginInstall)
+        let old = try Store.makeDecoder().decode(Config.self, from: Data(#"{"launchAtLogin": true}"#.utf8))
+        XCTAssertTrue(old.launchAtLogin)
+        XCTAssertNil(old.launchAtLoginInstall)
+
+        var c = Config()
+        c.launchAtLogin = true
+        c.launchAtLoginInstall = "0b1c@/Users/me/Applications/Nightowl.app"
+        let data = try Store.makeEncoder().encode(c)
+        XCTAssertEqual(try Store.makeDecoder().decode(Config.self, from: data), c)
+    }
+}
+
+/// SessionManager normalizes the floors when it loads config.json.
+@MainActor
+final class ConfigLoadTests: XCTestCase {
+    var h: Harness!
+
+    override func setUp() async throws { h = Harness() }
+    override func tearDown() async throws { h.home.destroy() }
+
+    private func log() -> String {
+        (try? String(contentsOf: h.home.paths.logFile, encoding: .utf8)) ?? ""
+    }
+
+    func testOutOfOrderFloorsAreCorrectedLoggedAndWrittenBack() throws {
+        var bad = Config()
+        bad.lowPowerFloor = 40
+        bad.endFloor = 60
+        try h.store.saveConfig(bad)
+
+        let m = h.makeManager()
+
+        XCTAssertEqual([m.config.lowPowerFloor, m.config.endFloor], [65, 60])
+        XCTAssertTrue(m.config.floorsAreOrdered)
+        XCTAssertEqual(try h.store.loadConfig(), m.config, "the corrected config was not written back")
+        XCTAssertTrue(log().contains("[info] nightowl: config.json: battery floors corrected: lowPowerFloor 40 -> 65, endFloor 60 -> 60; saved"), log())
+    }
+
+    /// When the corrected file cannot be written, the corrected floors still
+    /// apply in memory and the log says the save failed instead of
+    /// announcing a correction that did not reach the disk.
+    func testUnsavableCorrectionIsLoggedAsAnError() throws {
+        var bad = Config()
+        bad.lowPowerFloor = 40
+        bad.endFloor = 60
+        try h.store.saveConfig(bad)
+        // Store writes a temp file next to config.json; a read-only
+        // directory refuses it. Under NIGHTOWL_HOME the Logs directory sits
+        // inside that directory, so it must exist before the chmod for the
+        // log line to land.
+        try h.home.paths.createDirectories()
+        let dir = h.home.paths.appSupport.path
+        XCTAssertEqual(chmod(dir, 0o500), 0)
+        defer { chmod(dir, 0o700) }
+
+        let m = h.makeManager()
+
+        XCTAssertEqual([m.config.lowPowerFloor, m.config.endFloor], [65, 60])
+        XCTAssertEqual(try h.store.loadConfig(), bad, "the file should be untouched when the write fails")
+        let log = log()
+        XCTAssertTrue(log.contains("[error] nightowl: config.json: battery floors corrected: lowPowerFloor 40 -> 65, endFloor 60 -> 60; could not save the correction: "), log)
+        XCTAssertFalse(log.contains("; saved"), log)
+    }
+
+    func testOrderedFloorsLoadUnchanged() throws {
+        var fine = Config()
+        fine.lowPowerFloor = 30
+        fine.endFloor = 25
+        try h.store.saveConfig(fine)
+
+        let m = h.makeManager()
+
+        XCTAssertEqual(m.config, fine)
+        XCTAssertFalse(log().contains("battery floors corrected"), log())
+    }
+
+    // MARK: Lid-close update at launch
+
+    /// config.json as an earlier build left it: no lid-close mark.
+    private func writeEarlierBuildConfig(_ json: String) throws {
+        try h.home.paths.createDirectories()
+        try Data(json.utf8).write(to: h.home.paths.configFile)
+    }
+
+    /// The maintainer's upgrade: freeze-all on (saved when it was the
+    /// default) and mute off. The first launch turns freeze-all off and mute
+    /// on, writes that back with the mark, keeps the notice for Settings and
+    /// posts one notification naming both changes. The next launch does
+    /// nothing.
+    func testFirstLaunchAfterAnUpgradeAppliesTheLidCloseUpdateOnceWithANotice() async throws {
+        try writeEarlierBuildConfig(#"{"freezeAllApps": true, "muteOnLidClose": false, "freezeList": ["com.hnc.Discord"]}"#)
+
+        let m = h.makeManager()
+        XCTAssertEqual(h.notifier.posts.count, 0, "posted before the launch reconcile, when the app's notification delegate may not be installed yet")
+        await m.reconcile()
+
+        XCTAssertFalse(m.config.freezeAllApps)
+        XCTAssertTrue(m.config.muteOnLidClose)
+        XCTAssertTrue(m.config.lidCloseDefaultsApplied)
+        XCTAssertEqual(m.config.freezeList, ["com.hnc.Discord"], "nothing else changes")
+        let change = LidCloseDefaultsChange(turnedOffFreezeAll: true, turnedOnMute: true)
+        XCTAssertEqual(m.config.lidCloseDefaultsNotice, change)
+        XCTAssertEqual(try h.store.loadConfig(), m.config, "the update and its mark were not written back")
+        XCTAssertEqual(h.notifier.posts.map(\.title), [LidCloseDefaultsChange.title])
+        XCTAssertEqual(h.notifier.posts.first?.body, change.notificationBody)
+        XCTAssertTrue(log().contains(#"[info] nightowl: config.json: lid-close update: "All other apps" now keep running when the lid closes and "Mute audio" is now on; saved"#), log())
+
+        await m.reconcile()
+        let again = h.makeManager()
+        await again.reconcile()
+        XCTAssertEqual(again.config, m.config)
+        XCTAssertEqual(h.notifier.posts.count, 1, "the update is announced once")
+    }
+
+    /// A launch reconcile that cannot run (here the recovery lock is held)
+    /// still posts the notice.
+    func testTheLidCloseNoticeIsPostedEvenWhenTheLaunchReconcileIsRefused() async throws {
+        try writeEarlierBuildConfig(#"{"freezeAllApps": true, "muteOnLidClose": false}"#)
+        let m = h.makeManager()
+        let held = try XCTUnwrap(try RecoveryLock(url: h.home.paths.recoveryLock).tryAcquire())
+        defer { held.release() }
+
+        await m.reconcile()
+
+        XCTAssertNotNil(m.lastError, "the reconcile ran despite the held lock")
+        XCTAssertEqual(h.notifier.posts.filter { $0.title == LidCloseDefaultsChange.title }.count, 1)
+    }
+
+    /// Settings' Dismiss clears the notice in config.json, and a relaunch
+    /// neither brings the line back nor posts the notification again.
+    func testDismissingTheLidCloseNoticeIsSavedAndStaysDismissed() async throws {
+        try writeEarlierBuildConfig(#"{"freezeAllApps": true, "muteOnLidClose": false}"#)
+        let m = h.makeManager()
+        await m.reconcile()
+        XCTAssertNotNil(m.config.lidCloseDefaultsNotice)
+
+        m.dismissLidCloseNotice()
+
+        XCTAssertNil(m.config.lidCloseDefaultsNotice)
+        let saved = try XCTUnwrap(try h.store.loadConfig())
+        XCTAssertNil(saved.lidCloseDefaultsNotice, "the dismissal was not saved")
+        XCTAssertTrue(saved.lidCloseDefaultsApplied)
+        XCTAssertFalse(saved.freezeAllApps, "dismissing changes only the notice")
+        XCTAssertTrue(saved.muteOnLidClose, "dismissing changes only the notice")
+
+        let again = h.makeManager()
+        await again.reconcile()
+        XCTAssertNil(again.config.lidCloseDefaultsNotice)
+        XCTAssertEqual(h.notifier.posts.count, 1, "only the first launch announces the update")
+    }
+
+    /// A user who turns either setting back after the update is never
+    /// overridden again.
+    func testASettingTurnedBackAfterTheUpdateStaysBack() async throws {
+        try writeEarlierBuildConfig(#"{"freezeAllApps": true, "muteOnLidClose": false}"#)
+        let m = h.makeManager()
+        await m.reconcile()
+        m.config.freezeAllApps = true
+        m.config.muteOnLidClose = false
+        try h.store.saveConfig(m.config)
+
+        let again = h.makeManager()
+        await again.reconcile()
+
+        XCTAssertTrue(again.config.freezeAllApps)
+        XCTAssertFalse(again.config.muteOnLidClose)
+        XCTAssertEqual(h.notifier.posts.count, 1, "only the first launch announces the update")
+    }
+
+    /// A fresh install gets the new defaults, a config.json with the mark,
+    /// and no notice.
+    func testFreshInstallGetsTheNewDefaultsWithoutANotice() async throws {
+        XCTAssertFalse(FileManager.default.fileExists(atPath: h.home.paths.configFile.path))
+
+        let m = h.makeManager()
+        await m.reconcile()
+
+        XCTAssertTrue(m.config.muteOnLidClose)
+        XCTAssertFalse(m.config.freezeAllApps)
+        XCTAssertNil(m.config.lidCloseDefaultsNotice)
+        XCTAssertEqual(try h.store.loadConfig()?.lidCloseDefaultsApplied, true, "the first config.json carries the mark")
+        await h.makeManager().reconcile()
+        XCTAssertEqual(h.notifier.posts.count, 0)
+    }
+
+    /// An earlier build's config.json already set the new way is marked and
+    /// written back with nothing to announce.
+    func testUpgradeWithNothingToChangeIsMarkedSilently() async throws {
+        try writeEarlierBuildConfig(#"{"freezeAllApps": false, "muteOnLidClose": true}"#)
+
+        let m = h.makeManager()
+        await m.reconcile()
+
+        XCTAssertNil(m.config.lidCloseDefaultsNotice)
+        XCTAssertEqual(h.notifier.posts.count, 0)
+        XCTAssertEqual(try h.store.loadConfig()?.lidCloseDefaultsApplied, true)
+        XCTAssertTrue(log().contains("config.json: lid-close update: nothing to change; saved"), log())
+    }
+
+    // MARK: Default focused field
+
+    private func decode(_ json: String) throws -> Config {
+        try JSONDecoder().decode(Config.self, from: Data(json.utf8))
+    }
+
+    func testTheDefaultFocusedFieldIsHours() {
+        XCTAssertEqual(Config().defaultFocusField, .hours)
+    }
+
+    func testAConfigFromAnEarlierBuildKeepsHoursFocused() throws {
+        XCTAssertEqual(try decode("{}").defaultFocusField, .hours)
+    }
+
+    func testTheDefaultFocusedFieldIsSavedByName() throws {
+        for field in DurationInput.Field.allCases {
+            var c = Config()
+            c.defaultFocusField = field
+            let data = try JSONEncoder().encode(c)
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            XCTAssertEqual(json["defaultFocusField"] as? String, "\(field)")
+            XCTAssertEqual(try JSONDecoder().decode(Config.self, from: data).defaultFocusField, field)
+        }
+    }
+
+    func testAnUnknownFocusedFieldFallsBackToHoursAndKeepsTheRestOfTheConfig() throws {
+        let c = try decode(#"{"defaultFocusField": "seconds", "endFloor": 15}"#)
+        XCTAssertEqual(c.defaultFocusField, .hours)
+        XCTAssertEqual(c.endFloor, 15, "one bad value must not throw the whole config away")
+    }
+
+    // MARK: Countdown style
+
+    func testTheDefaultCountdownStyleIsRemaining() {
+        XCTAssertEqual(Config().countdownStyle, .remaining)
+    }
+
+    func testAConfigFromAnEarlierBuildKeepsTheRemainingCountdown() throws {
+        XCTAssertEqual(try decode("{}").countdownStyle, .remaining)
+    }
+
+    func testTheCountdownStyleIsSavedByName() throws {
+        for style in CountdownStyle.allCases {
+            var c = Config()
+            c.countdownStyle = style
+            let data = try JSONEncoder().encode(c)
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            XCTAssertEqual(json["countdownStyle"] as? String, "\(style)")
+            XCTAssertEqual(try JSONDecoder().decode(Config.self, from: data).countdownStyle, style)
+        }
+    }
+
+    func testAnUnknownCountdownStyleFallsBackToRemainingAndKeepsTheRestOfTheConfig() throws {
+        let c = try decode(#"{"countdownStyle": "minutes", "endFloor": 15}"#)
+        XCTAssertEqual(c.countdownStyle, .remaining)
+        XCTAssertEqual(c.endFloor, 15, "one bad value must not throw the whole config away")
+    }
+}

@@ -1,22 +1,22 @@
 <p align="center">
-  <img src="docs/assets/eye-open.svg" alt="Insomnia: an open eye with a round pupil and five lashes above it" width="112">
+  <img src="docs/assets/eye-open.svg" alt="Nightowl: an open eye with a round pupil and five lashes above it" width="112">
 </p>
 
-<h1 align="center">Insomnia</h1>
+<h1 align="center">Nightowl</h1>
 
 <p align="center">
   <strong>Keep your Mac awake. Give the session an end time.</strong>
 </p>
 
 <p align="center">
-  A macOS menu bar app for timed awake sessions. Insomnia is an eye icon that
+  A macOS menu bar app for timed awake sessions. Nightowl is an eye icon that
   lives in your MacBook menu bar. It has no Dock icon and no main window. Set
   how long your Mac stays awake, choose what happens when the lid closes, and
   see when something could not be undone.
 </p>
 
 <p align="center">
-  <a href="https://getinsomnia.app"><strong>Website</strong></a> ·
+  <a href="https://getnightowl.app"><strong>Website</strong></a> ·
   <a href="#install"><strong>Install</strong></a> ·
   <a href="#using-it"><strong>Using it</strong></a> ·
   <a href="#what-happens-when-the-lid-closes"><strong>Lid close</strong></a> ·
@@ -30,7 +30,7 @@
   <img alt="Experimental source build" src="https://img.shields.io/badge/Status-experimental-536D78?style=flat-square">
 </p>
 
-> **Use a stable, well-ventilated surface, not a closed bag.** Insomnia is
+> **Use a stable, well-ventilated surface, not a closed bag.** Nightowl is
 > experimental. Recovery can fail, and a running timer is not a safety
 > guarantee.
 > [Validation status](docs/release-validation.md) · [Apple's ventilation guidance](https://support.apple.com/en-us/102336)
@@ -46,11 +46,11 @@ Requires macOS 26 or later on an Apple Silicon Mac.
 Paste this into your coding agent:
 
 ```text
-Install the latest stable Insomnia release by following https://github.com/KING-MOI/Insomnia/blob/main/skills/install-insomnia/SKILL.md. If a step needs my password, give me the command to run in Terminal.
+Install the latest stable Nightowl release by following https://github.com/KING-MOI/Nightowl/blob/main/skills/install-nightowl/SKILL.md. If a step needs my password, give me the command to run in Terminal.
 ```
 
-For the newest nightly, write "the newest Insomnia nightly prerelease" in
-place of "the latest stable Insomnia release". Nightlies are built from `main`
+For the newest nightly, write "the newest Nightowl nightly prerelease" in
+place of "the latest stable Nightowl release". Nightlies are built from `main`
 on each day it has new commits. They have the newest code and may be broken.
 
 To install a release yourself, follow [docs/install.md](docs/install.md). It
@@ -65,10 +65,10 @@ Needs Xcode with Swift 6.2 or later. Replace `v<version>` with the latest
 stable tag, or a nightly tag for the newest code:
 
 ```bash
-git clone --branch v<version> --depth 1 https://github.com/KING-MOI/Insomnia.git
-cd Insomnia
+git clone --branch v<version> --depth 1 https://github.com/KING-MOI/Nightowl.git
+cd Nightowl
 ./scripts/install.sh
-open "$HOME/Applications/Insomnia.app"
+open "$HOME/Applications/Nightowl.app"
 ```
 
 <details>
@@ -77,13 +77,13 @@ open "$HOME/Applications/Insomnia.app"
 The installer needs your password, because the sudoers rule is a system
 file. It installs:
 
-- The app, at `~/Applications/Insomnia.app`.
+- The app, at `~/Applications/Nightowl.app`.
 - A **recovery agent**, a `launchd` job that runs every minute. If the app is
   gone when a session should have ended, the agent tries to undo the
   session's changes.
-- A **sudoers rule** at `/etc/sudoers.d/insomnia`. A sudoers rule decides who
+- A **sudoers rule** at `/etc/sudoers.d/nightowl`. A sudoers rule decides who
   can run what with `sudo`. This one lets your user account, not just
-  Insomnia, run these four commands without a password:
+  Nightowl, run these four commands without a password:
 
 ```text
 /usr/bin/pmset -a disablesleep 1
@@ -108,10 +108,10 @@ file and explains how upgrades replace them.
    To show only the eye, turn off "Show the countdown in the menu bar" in
    Settings. The eye opens while a session runs and closes when it ends,
    and the right-click menu also shows the time left.
-4. **Settings and status.** Right-click the eye. Quit asks Insomnia to undo
+4. **Settings and status.** Right-click the eye. Quit asks Nightowl to undo
    the session first, and it refuses while a change is still waiting to be
    undone. Saved audio for an output that isn't connected doesn't hold it up.
-   Insomnia restores that output if it reconnects while the app runs, or at
+   Nightowl restores that output if it reconnects while the app runs, or at
    the next launch.
 5. **Menu bar style.** The Menu bar picker in Settings > General has four
    styles. Pills, the default, works as described above. Compact keeps only
@@ -135,7 +135,7 @@ file and explains how upgrades replace them.
    click, so Settings greys the switch out there. It is off by default.
 7. **Sounds.** "Play a sound when you start or end a session" in Settings >
    General plays a short tone when you start or end a session from the
-   menu bar. It is off by default, and while it is off Insomnia makes no
+   menu bar. It is off by default, and while it is off Nightowl makes no
    sound and loads none. A session that ends without you asking (the
    timer, the recovery agent, Quit, a battery or heat rule, recovery after
    a crash) makes no sound. Nothing plays while the displays sleep or the
@@ -143,37 +143,37 @@ file and explains how upgrades replace them.
 8. **From a script or an agent.** The app's binary drives the running app:
 
    ```bash
-   INSOMNIA=~/Applications/Insomnia.app/Contents/MacOS/Insomnia
-   "$INSOMNIA" --session start 7200    # two hours
-   "$INSOMNIA" --session extend 1800
-   "$INSOMNIA" --session status
-   "$INSOMNIA" --session end
+   NIGHTOWL=~/Applications/Nightowl.app/Contents/MacOS/Nightowl
+   "$NIGHTOWL" --session start 7200    # two hours
+   "$NIGHTOWL" --session extend 1800
+   "$NIGHTOWL" --session status
+   "$NIGHTOWL" --session end
    ```
 
    It starts, extends and ends the same session the menu bar counts down,
    with the same battery and heat rules, and prints one line. It changes
    nothing itself, so when the app isn't running it says so and exits 1.
    A build without this mode opens the menu bar app instead, so a script
-   that may meet one checks `InsomniaSessionCommandVersion` in the bundle's
+   that may meet one checks `NightowlSessionCommandVersion` in the bundle's
    `Info.plist` first.
 
 You don't have to close the lid, and opening it doesn't end the session.
 When the timer or a battery or heat rule ends a session with the lid closed,
-Insomnia puts the Mac to sleep.
+Nightowl puts the Mac to sleep.
 
-Insomnia stops system sleep, not display sleep, so the display still turns off
+Nightowl stops system sleep, not display sleep, so the display still turns off
 when idle. If your Mac then asks for a password, agents that drive the screen
 stop at the lock screen. **Keep the screen on and unlocked** in Settings >
 General holds the display awake during a session, like `caffeinate -d`, so the
 screen saver never starts and the screen never locks while idle. With the lid
 closed, the display goes to brightness 0 instead of sleeping. **Lock the
 screen** under When the lid closes still locks the screen when you close the
-lid. When the session ends or Insomnia quits or crashes, macOS drops the hold,
-and the display sleeps and locks as before. Insomnia never changes the lock
+lid. When the session ends or Nightowl quits or crashes, macOS drops the hold,
+and the display sleeps and locks as before. Nightowl never changes the lock
 setting. The switch is off by default because anyone who opens the Mac during a
 session finds it unlocked, unless a lid close locked it.
 
-On battery power, Insomnia turns on Low Power Mode below 40% and ends the
+On battery power, Nightowl turns on Low Power Mode below 40% and ends the
 session below 10%. Those are the defaults. You can change both in Settings,
 and an end floor of 0 turns the battery end off. The heat rules turn on Low Power
 Mode when the Mac gets seriously hot and end the session at critical heat.
@@ -181,7 +181,7 @@ They are on by default, and Settings can turn them off. All of these rules
 only work while the app runs.
 
 Before your first session, check Settings. Then run a short session you can
-watch, and read `~/Library/Logs/Insomnia/insomnia.log` afterward.
+watch, and read `~/Library/Logs/Nightowl/nightowl.log` afterward.
 
 ## What happens when the lid closes
 
@@ -192,7 +192,7 @@ watch, and read `~/Library/Logs/Insomnia/insomnia.log` afterward.
 During a session, closing the lid does each of these, and opening it tries
 to undo them. The timer keeps counting down while the lid is closed.
 
-- **Display and keyboard light go off.** Insomnia saves their brightness
+- **Display and keyboard light go off.** Nightowl saves their brightness
   first. With sleep turned off, macOS no longer does this by itself.
 - **Apps on the freeze list are frozen.** Freezing sends an app's processes
   `SIGSTOP`, which pauses them until `SIGCONT` on lid open. The list starts
@@ -207,7 +207,7 @@ to undo them. The timer keeps counting down while the lid is closed.
   until you sign in. Off, the Mac stays signed in with the lid closed. A lid
   closed on an external display locks only once the display is unplugged. It
   uses a private macOS call, so the menu shows a line if it fails.
-- **Audio is muted.** Lid open unmutes each output Insomnia muted, even if you
+- **Audio is muted.** Lid open unmutes each output Nightowl muted, even if you
   switched to another one.
 - **Low Power Mode turns on.** It turns off when the lid opens, unless a
   battery or heat rule still needs it.
@@ -228,16 +228,16 @@ and how to test lid actions without closing the lid.
   <img src="docs/assets/recovery-flow.svg" alt="The app and a launchd backstop coordinate through a shared lock and recovery journal. The app handles normal cleanup. The backstop checks every minute and attempts due recovery, leaving valid active sessions alone. Failed or unreadable recovery evidence stays on disk; saved audio needs the app and unconfirmed stopped processes need inspection." width="880">
 </p>
 
-Insomnia writes each change to a **recovery journal**, a file on disk, before
+Nightowl writes each change to a **recovery journal**, a file on disk, before
 it makes the change. Ending the session tries to undo what the journal lists.
 If the app crashes or quits, the recovery agent tries the same once the
 session's end time has passed.
 
 Some things need you:
 
-- The recovery agent can't restore audio. Open Insomnia again for that.
+- The recovery agent can't restore audio. Open Nightowl again for that.
 - The recovery agent doesn't watch the battery or the temperature.
-- Insomnia only unfreezes a process it can prove it froze. A frozen process
+- Nightowl only unfreezes a process it can prove it froze. A frozen process
   it can't prove stays frozen until you check it.
 
 If the menu shows a recovery warning, deal with it before you leave the Mac
@@ -248,19 +248,19 @@ alone. [docs/recovery.md](docs/recovery.md) explains each case.
 <details>
 <summary><strong>iPhone hotspot handoff and tmux</strong></summary>
 
-If the Wi-Fi drops during a session, Insomnia can join your iPhone's hotspot.
+If the Wi-Fi drops during a session, Nightowl can join your iPhone's hotspot.
 Set System Settings > Wi-Fi > Ask to join hotspots to Automatically, then enter
-the hotspot's name and password in Insomnia's Settings. The password stays in
-your login Keychain. Insomnia asks for Location Services access, because
+the hotspot's name and password in Nightowl's Settings. The password stays in
+your login Keychain. Nightowl asks for Location Services access, because
 macOS requires it to read Wi-Fi network names. It never reads your location.
-After you reinstall Insomnia, enter the password again.
+After you reinstall Nightowl, enter the password again.
 
-After 90 seconds without a network, Insomnia can also type `continue` into a
+After 90 seconds without a network, Nightowl can also type `continue` into a
 tmux pane running a coding agent. It only types into panes you list in
 Settings and mark yourself:
 
 ```bash
-tmux set-option -p -t <session:window.pane> @insomnia-nudge on
+tmux set-option -p -t <session:window.pane> @nightowl-nudge on
 ```
 
 It doesn't press Enter unless you turn that on. Mark a pane you don't type in.
@@ -287,8 +287,8 @@ details.
 <details>
 <summary><strong>Configuration and privacy</strong></summary>
 
-Settings live in `~/Library/Application Support/Insomnia/config.json` and logs
-in `~/Library/Logs/Insomnia/`. Insomnia sets both folders and their files to
+Settings live in `~/Library/Application Support/Nightowl/config.json` and logs
+in `~/Library/Logs/Nightowl/`. Nightowl sets both folders and their files to
 owner-only permissions. It leaves symlinks and access control lists (ACLs,
 extra per-account permission entries) as they are, so another account can
 still have access through one. Logs can contain Wi-Fi names, process details
@@ -323,11 +323,11 @@ settings. See [Contributing](CONTRIBUTING.md), [Security reporting](SECURITY.md)
 
 ## Star history
 
-<a href="https://www.star-history.com/?repos=KING-MOI%2FInsomnia&amp;type=date&amp;legend=top-left">
+<a href="https://www.star-history.com/?repos=KING-MOI%2FNightowl&amp;type=date&amp;legend=top-left">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=KING-MOI/insomnia&amp;type=date&amp;theme=dark&amp;legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=KING-MOI/insomnia&amp;type=date&amp;legend=top-left" />
-    <img alt="Star history for KING-MOI/Insomnia" src="https://api.star-history.com/svg?repos=KING-MOI/insomnia&amp;type=date&amp;legend=top-left" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=KING-MOI/nightowl&amp;type=date&amp;theme=dark&amp;legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=KING-MOI/nightowl&amp;type=date&amp;legend=top-left" />
+    <img alt="Star history for KING-MOI/Nightowl" src="https://api.star-history.com/svg?repos=KING-MOI/nightowl&amp;type=date&amp;legend=top-left" />
   </picture>
 </a>
 

@@ -32,7 +32,7 @@ jobs:
   swift:
     name: Swift test (Mac mini, macOS 27 VM)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: [self-hosted, insomnia-mini]
+    runs-on: [self-hosted, nightowl-mini]
     timeout-minutes: 60
     steps:
       - name: Check the VM

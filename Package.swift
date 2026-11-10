@@ -2,28 +2,28 @@
 import PackageDescription
 
 let package = Package(
-    name: "Insomnia",
+    name: "Nightowl",
     platforms: [
         .macOS(.v26),
     ],
     targets: [
         .executableTarget(
-            name: "Insomnia",
-            path: "Sources/Insomnia",
+            name: "Nightowl",
+            path: "Sources/Nightowl",
             swiftSettings: [
                 .swiftLanguageMode(.v6),
             ]
         ),
-        // Test-only C target. Its constructor points INSOMNIA_HOME at a temp
+        // Test-only C target. Its constructor points NIGHTOWL_HOME at a temp
         // directory when the test bundle loads, before any test can log.
         .target(
-            name: "InsomniaTestHome",
-            path: "Tests/InsomniaTestHome"
+            name: "NightowlTestHome",
+            path: "Tests/NightowlTestHome"
         ),
         .testTarget(
-            name: "InsomniaTests",
-            dependencies: ["Insomnia", "InsomniaTestHome"],
-            path: "Tests/InsomniaTests",
+            name: "NightowlTests",
+            dependencies: ["Nightowl", "NightowlTestHome"],
+            path: "Tests/NightowlTests",
             swiftSettings: [
                 .swiftLanguageMode(.v6),
             ]
