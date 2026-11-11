@@ -12,14 +12,14 @@ The maintainer ran these checks on November 12 and 13, 2026, on two Macs:
 - A MacBook with an Apple M5 (Mac17,2) on macOS 26.2 (25C56).
 - A macOS 27.0.1 (26A434) VM on the maintainer's Mac mini.
 
-Most checks ran on a local build of the release candidate, commit `8a7191c` (CDHash `0e660cf2c11d07d5735a7dc937a9e1275aa35b3d`), installed with its own `scripts/install.sh --app`. Its tree is the same as this release's, apart from the version in `Resources/Info.plist` and the Settings check in `docs/releasing.md`. The release is the tag `v0.2.0` at that tree's commit, `7b00449`. Before tagging, the Release workflow's manual run on `7b00449` built a zip that passed `shasum -a 256 -c SHA256SUMS`, installed with its own `install.sh --allow-unverified-origin --app`, and ran a session. After publishing, the release's `Insomnia-0.2.0-macos.zip` (SHA-256 `a497c330a790fe0ab290f73212bc986c0b373483445ea282a88c0990ead843e8`) passed the checksum and the `gh attestation verify` command in its notes, and installed with the commands in its notes. The installed binary matches the zip's. The app reports 0.2.0 (2), CDHash `893a0de9e3c504eb0bc947cff543d6967ef08096`. `Insomnia --session start 120` set `SleepDisabled` to 1, `--session end` set it back to 0, and the recovery agent exited 0.
+Most checks ran on a local build of the release candidate, commit `8a7191c` (CDHash `0e660cf2c11d07d5735a7dc937a9e1275aa35b3d`), installed with its own `scripts/install.sh --app`. Its tree is the same as this release's, apart from the version in `Resources/Info.plist` and the Settings check in `docs/releasing.md`. The release is the tag `v0.2.0` at that tree's commit, `7b00449`. Before tagging, the Release workflow's manual run on `7b00449` built a zip that passed `shasum -a 256 -c SHA256SUMS`, installed with its own `install.sh --allow-unverified-origin --app`, and ran a session. After publishing, the release's `Nightowl-0.2.0-macos.zip` (SHA-256 `a497c330a790fe0ab290f73212bc986c0b373483445ea282a88c0990ead843e8`) passed the checksum and the `gh attestation verify` command in its notes, and installed with the commands in its notes. The installed binary matches the zip's. The app reports 0.2.0 (2), CDHash `893a0de9e3c504eb0bc947cff543d6967ef08096`. `Nightowl --session start 120` set `SleepDisabled` to 1, `--session end` set it back to 0, and the recovery agent exited 0.
 
 The session, recovery, Login Items, lid and network rows ran on the MacBook only.
 
 | Check | Result |
 | --- | --- |
 | Menu bar styles: start, extend, end by holding, one-click start on and off, sounds on and off, and focus kept by the app in front, in Pills, Compact, Minimal and Popover | Passed in the macOS 27 VM, except the rows below. On macOS 26 every part that ran passed; some pending-start, style-change and VoiceOver parts were not run |
-| Right-click and Control-click menus, in Pills, Compact and Minimal | Failed on macOS 26 and 27. The menu opens at the pointer, over the menu bar, not beneath the icon as in 0.1.0. Every row and shortcut works. Known issue, [#174](https://github.com/KING-MOI/Insomnia/issues/174) |
+| Right-click and Control-click menus, in Pills, Compact and Minimal | Failed on macOS 26 and 27. The menu opens at the pointer, over the menu bar, not beneath the icon as in 0.1.0. Every row and shortcut works. Known issue, [#174](https://github.com/KING-MOI/Nightowl/issues/174) |
 | Compact: a second click on the eye closes the panel and gives focus back | Passed on macOS 26. In the macOS 27 VM the panel stayed open, with simulated clicks; not checked on macOS 27 hardware |
 | Popover: a right-click outside during a hold closes the popover and keeps the session | Passed on macOS 26. In the macOS 27 VM a stale popover window stayed visible and the session continued; not checked on macOS 27 hardware |
 | Compact and Popover stay open through display sleep | Not run on hardware, since display sleep locks an unattended Mac. In the VM both closed across display sleep, and reopening showed the right time left |
@@ -27,14 +27,14 @@ The session, recovery, Login Items, lid and network rows ran on the MacBook only
 | Settings: in front of the active app, light and dark, window controls, and scrolling to Open at login | Passed in the VM. On the MacBook the window opened in light and dark, no taller than the screen, and scrolled to Open at login. The old check said a 1440p display fits the page; at about 1,790 pt it scrolls there too, and the check now says so |
 | Settings: Terminal and App Nap, battery floor pickers, and 30 tmux targets in the hotspot sheet | Passed. The 30-target sheet ran in the VM only |
 | Normal end, timer expiry and repeated Quit restore sleep | Passed |
-| `Insomnia --session` start, extend and end; the sleep guard reads its setting back | Passed |
+| `Nightowl --session` start, extend and end; the sleep guard reads its setting back | Passed |
 | Force-quit, then recovery by the launchd agent at the deadline, and retry after a failed restore | Passed |
 | An unreadable or malformed session file is moved aside and not resumed | Passed |
 | A `SleepDisabled` set by something else is left alone and reported | Passed |
 | The agent finishes a journal clear the app could not | Passed |
 | Loose permissions on an existing install are tightened at launch | Passed |
 | Frozen process recovery, and restoring an existing Low Power Mode or App Nap setting | Passed in part. The installed agent resumed a frozen test process and cleared its entry. An existing Low Power Mode, on and then off, was kept through normal sessions. A Terminal App Nap setting that was absent, off or on came back at a normal end, and off came back through the agent after a force-quit. Not run: recovery with a missing bundle, restoring saved audio, and restoring at uninstall |
-| Login Items & Extensions lists the recovery agent as Insomnia with its app icon | Failed on the release candidate before a logout: the row reads Insomnia, "Item from unidentified developer", with a generic icon instead of the app icon. Not yet rechecked after a login |
+| Login Items & Extensions lists the recovery agent as Nightowl with its app icon | Failed on the release candidate before a logout: the row reads Nightowl, "Item from unidentified developer", with a generic icon instead of the app icon. Not yet rechecked after a login |
 | A timed end with the lid closed puts the Mac to sleep (#138) | Passed, real lid on the MacBook |
 | A lid closed on an external display counts as open, and unplugging that display counts as a close (#135) | Passed, real lid on the MacBook |
 | Lock the screen on lid close, on and off (#71) | Passed, real lid on the MacBook |
@@ -50,7 +50,7 @@ Not run for this release: an install with SIP disabled; reboot or login with an 
 The maintainer ran these checks on a MacBook with an Apple M5 (Mac17,2) and
 32 GB of memory, on macOS 26.2 (25C56), before the release on October 10,
 2026, and recorded them here on October 11, 2026. The tested build is the
-release's Insomnia.app (version 0.1.0, build 1) with the scripts from the
+release's Nightowl.app (version 0.1.0, build 1) with the scripts from the
 `v0.1.0` tag, commit `ea5ce15`.
 
 | Check | Result |
@@ -69,10 +69,10 @@ release's Insomnia.app (version 0.1.0, build 1) with the scripts from the
 | Headed-browser throttling with the lid closed | Passed |
 | Battery/thermal event behavior on supported hardware | Passed |
 | Install/upgrade/uninstall with recoverable failure conditions | Passed |
-| Install from the 0.1.0 release zip with `scripts/install.sh --app ./Insomnia.app` on a working Mac, including its `codesign --verify --strict --deep` of the prebuilt bundle and first launch under Gatekeeper | Passed |
+| Install from the 0.1.0 release zip with `scripts/install.sh --app ./Nightowl.app` on a working Mac, including its `codesign --verify --strict --deep` of the prebuilt bundle and first launch under Gatekeeper | Passed |
 | `scripts/uninstall.sh` run from the unpacked 0.1.0 release folder | Passed |
 
-The release zip holds the Insomnia.app that was installed on the
+The release zip holds the Nightowl.app that was installed on the
 maintainer's Mac, copied file for file and not re-signed. No GitHub workflow
 built or attested it. Its executable matches the local release build of a
 clean checkout at `b05652c`, apart from two Mach-O size fields and the code
@@ -91,10 +91,10 @@ reported no detected secrets across 175 locally available commits.
 
 ## Remediation evidence
 
-- [CI PR #2](https://github.com/KING-MOI/Insomnia/pull/2), commit
+- [CI PR #2](https://github.com/KING-MOI/Nightowl/pull/2), commit
   `f20a860`: hosted macOS tests/release build, ShellCheck, and Greptile check
   succeeded. No unresolved review threads were present at verification.
-- [Automation PR #3](https://github.com/KING-MOI/Insomnia/pull/3), commit
+- [Automation PR #3](https://github.com/KING-MOI/Nightowl/pull/3), commit
   `52a3b29`: after addressing three Greptile findings and a timeout-reporting
   defect, an independent snapshot passed 206 tests, release compilation, and
   ShellCheck. The three review threads are resolved. Follow-up `ba82712`
@@ -136,7 +136,7 @@ earlier green run evidence for subsequent changes.
 During an active session on the development MacBook the user closed the lid
 and the panel stayed lit with the keyboard backlight on. The log shows the
 session starting at 00:48:12, the lid closing at 00:48:19 and opening at
-00:48:25, with Insomnia's lid-close transaction running and freezing Slack
+00:48:25, with Nightowl's lid-close transaction running and freezing Slack
 (6 pids) only. `pmset -g log` has no "Display is turned off" event in that
 window; the next display-off is the 2-minute idle timer at 01:08:51. Root
 cause: `pmset -a disablesleep 1` (the sleep guard) removes the only path by
@@ -210,11 +210,11 @@ clear is not read or written again, and only its clear is retried; the
 clear goes into the journal ahead of any later write, so a lid close
 journals the level the device reads. When the write fails and state.json
 cannot take the cleared flag either, backstop.sh would pass over the
-entry, so Insomnia retries it in process and holds Quit until the write
+entry, so Nightowl retries it in process and holds Quit until the write
 lands or the flag is on disk. The sampler takes no reading of a device
 whose brightness is journaled, and each level written from the journal
 or found set since becomes its sample, so a close right after a late
-restore journals that level. A display reading above 0 under Insomnia's
+restore journals that level. A display reading above 0 under Nightowl's
 own Low Power Mode, or after it in the same boot, relaunches included,
 decides nothing, and a launch after a restart reads the entry again. A
 backstop run whose `lowpowermode 0` exits 0 gives that record its own boot,
@@ -228,7 +228,7 @@ flagged until the panel reads above 0. If state.json refuses that record,
 Quit waits until it lands. A Low Power Mode claim journaled before a
 restart is read before the switch-off, and the read only goes to the
 log. Whether the mode reads on, off or not at all, the switch-off counts
-as Insomnia's in this boot, since a mode that reads off may have gone off
+as Nightowl's in this boot, since a mode that reads off may have gone off
 only a moment ago. The kept display entry is recorded for this boot, so
 it stays flagged, and the display is not sampled, through this boot,
 relaunches included. A mode off since long before the launch reads the
@@ -313,7 +313,7 @@ with `scripts/install.sh`. Comet 154.0.8037.179, Google Chrome 154.0.8037.98.
 Machine: MacBook Air, Apple M4, macOS 27.0.1. Build: the lock-screen branch
 at `2fb7508`, with "Lock the screen" on.
 
-- insomnia.log has "lid closed" and "screen locked on lid close" in the same
+- nightowl.log has "lid closed" and "screen locked on lid close" in the same
   second; `CGSSessionScreenIsLocked` read Yes about one second later.
 - The lid stayed closed for 2 min 44 s. A 2 s heartbeat had no gap over 3 s,
   `pmset -g log` shows no Sleep or DarkWake in that window, and the network
@@ -325,7 +325,7 @@ at `2fb7508`, with "Lock the screen" on.
 Machine: MacBook Pro (Mac14,6), Apple M2 Max, 64 GB, macOS 27.0 (26A428).
 Build: `main` `db9085e` with the Settings change, built with Xcode 27.1
 (Swift 6.4) by `swift build -c release` and run unbundled with a throwaway
-`INSOMNIA_HOME`. Nothing was installed and no session was started.
+`NIGHTOWL_HOME`. Nothing was installed and no session was started.
 
 - Settings… from the menu bar icon opened a 490 × 896 pt window with every
   setting on one page and no scrolling, in light and dark appearance, with
@@ -354,7 +354,7 @@ Machine: MacBook Pro (Mac14,6), Apple M2 Max, 64 GB, macOS 27.0.1 (26A434).
 Build: `settings-hig` at `544b7c9` (with `main` `ad96f8b` merged), and for
 the Apple app check, the commit that records it. Each was built with Xcode
 27.1 (Swift 6.4) by `swift build -c release -Xswiftc -warnings-as-errors`
-and run unbundled with a throwaway `INSOMNIA_HOME`. Nothing was installed
+and run unbundled with a throwaway `NIGHTOWL_HOME`. Nothing was installed
 and no session was started.
 
 - With Slack on both `agentList` and `freezeList` in config.json, the page

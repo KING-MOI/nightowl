@@ -1,4 +1,4 @@
-# Insomnia — keep the Mac awake and working with the lid closed
+# Nightowl — keep the Mac awake and working with the lid closed
 
 These are design notes, not a release certification. The
 [README](../README.md) describes supported use and recovery limits; the
@@ -10,7 +10,7 @@ are not exhaustive descriptions of the current code.
 
 ## Purpose
 
-Insomnia is a menu bar app for timed awake sessions on a MacBook, used on a
+Nightowl is a menu bar app for timed awake sessions on a MacBook, used on a
 stable, well-ventilated surface. It must not be used to keep a Mac awake in a
 closed bag. Its design goals are to:
 
@@ -35,7 +35,7 @@ closed bag. Its design goals are to:
 - macOS 26 on Apple Silicon (built and tested on MacBook Pro M5).
 - Swift 6, SwiftUI content hosted in a custom `NSStatusItem`, Swift Package.
   No Xcode project.
-- `build-app.sh` assembles a minimal `Insomnia.app` bundle (`LSUIElement =
+- `build-app.sh` assembles a minimal `Nightowl.app` bundle (`LSUIElement =
   true`, no Dock icon) with `backstop.sh` sealed under `Contents/Resources`
   and signs it ad-hoc.
   `install.sh` installs that build, or a prebuilt bundle passed with
@@ -60,7 +60,7 @@ closed bag. Its design goals are to:
 ## Core model
 
 The recovery agent starts the app's headless `--backstop` command only when
-the bundle advertises that command in `InsomniaBackstopCommand` and its
+the bundle advertises that command in `NightowlBackstopCommand` and its
 pinned requirement consists entirely of cdhash clauses, and a bounded
 `csrutil status` call reports SIP enabled. `SpawnConstraint`
 lets launchd enforce those hashes before any app code executes; the command
@@ -81,7 +81,7 @@ Session {
   extendedBy:  [TimeInterval]
 }
 
-RuntimeState {                // everything Insomnia changed and must undo
+RuntimeState {                // everything Nightowl changed and must undo
   sleepDisabledByUs:  Bool
   lowPowerSetByUs:    Bool
   frozenProcesses:    [{pid, startedAt, startedAtMicros, bootSession}]
@@ -101,7 +101,7 @@ RuntimeState {                // everything Insomnia changed and must undo
 }
 ```
 
-Both are written to `~/Library/Application Support/Insomnia/` as JSON on every
+Both are written to `~/Library/Application Support/Nightowl/` as JSON on every
 change. They are the source of truth for reconcile and for the backstop.
 Legacy `frozenPids` entries lack ownership identity and need conservative
 recovery; newly written journals use `frozenProcesses`.
@@ -170,8 +170,8 @@ recovery; newly written journals use `frozenProcesses`.
   behind it and is refused the same way. The reason goes away once the
   end restores sleep or leaves the rest to the recovery agent, unless a
   newer error has replaced it.
-- Quitting Insomnia always ends the session. There is no "keep awake after quit".
-- `Insomnia --session start <seconds> | extend <seconds> | end | status` runs
+- Quitting Nightowl always ends the session. There is no "keep awake after quit".
+- `Nightowl --session start <seconds> | extend <seconds> | end | status` runs
   the same actions from a script or an agent (`SessionCommand.swift`). Each
   command line writes its own request file, `session-command.<id>.request`
   in the support directory, holding `start <seconds>`, `extend <seconds>`
@@ -186,12 +186,12 @@ recovery; newly written journals use `frozenProcesses`.
   session later. `status` only reads session.json. The
   file is the same trust boundary as config.json: only this user can write
   the directory, and anyone who can write it already controls the app. The
-  bundle declares the interface as `InsomniaSessionCommandVersion` in its
+  bundle declares the interface as `NightowlSessionCommandVersion` in its
   Info.plist, because an older build opens the menu bar app instead.
 
 ### 2. Sleep guard and root access
 
-- `install.sh` writes `/etc/sudoers.d/insomnia` allowing the user to run,
+- `install.sh` writes `/etc/sudoers.d/nightowl` allowing the user to run,
   without a password, exactly:
   - `/usr/bin/pmset -a disablesleep 1`
   - `/usr/bin/pmset -a disablesleep 0`
@@ -211,7 +211,7 @@ recovery; newly written journals use `frozenProcesses`.
   request releases it before the recovery lock or the journal can refuse
   the end, so a refused end never keeps the screen unlocked past the
   deadline. A release macOS refuses keeps the hold and says so in the
-  menu; quitting Insomnia releases it. A hold or a timeout move macOS
+  menu; quitting Nightowl releases it. A hold or a timeout move macOS
   refuses says so in the menu too, and turning the toggle off and on
   tries again. A resume at launch that fails, or stops at a `sudo pmset`
   still running, drops the session and any hold the toggle took
@@ -227,7 +227,7 @@ recovery; newly written journals use `frozenProcesses`.
 ### 3. Lid observer
 
 - IOKit interest notification on `IOPMrootDomain` for `AppleClamshellState`.
-  Insomnia sleeps in its run loop; the kernel wakes it on change. Zero cost
+  Nightowl sleeps in its run loop; the kernel wakes it on change. Zero cost
   between events, with one exception: a closed lid whose display list
   cannot be read (below).
 - 2-second debounce to ignore flapping.
@@ -256,7 +256,7 @@ recovery; newly written journals use `frozenProcesses`.
   session that starts under such a lid, or that the app finds still
   running at launch, takes it as closed, as it takes a lid in a bag: the
   countdown redraw stops and the lid is a Low Power Mode cause, but
-  Insomnia mutes, freezes, darkens and locks nothing for it.
+  Nightowl mutes, freezes, darkens and locks nothing for it.
 - A close darkens the display and keyboard backlight only while the
   built-in display is online. Under a lid closed at a desk, and after its
   external display is unplugged, it is offline and macOS keeps both dark,
@@ -342,7 +342,7 @@ count a waiting entry as not restored, since nothing failed. The close
 left the device at 0, so a reading above 0 is a level set since, as the
 error asked: the darkening is already undone, and the entry is cleared
 without a write rather than overwrite that level. A display reading above
-0 taken while Insomnia's own Low Power Mode is on is the mode's rescaled
+0 taken while Nightowl's own Low Power Mode is on is the mode's rescaled
 value and not that level, and once the mode is off the panel comes back
 over a time nobody has measured. So no display reading above 0 taken
 under the mode, or after it in the same boot of the Mac, decides the
@@ -379,7 +379,7 @@ boot is taken as this boot's, so the entry waits, at the cost of one more
 restart. backstop.sh, before its own `lowpowermode 0`, gives a record of
 another boot, or with none, its own boot (empty if it cannot read it),
 after a restart or not, and publishes that journal on its own first: the
-mode may have been on in that boot until then, before Insomnia launched in
+mode may have been on in that boot until then, before Nightowl launched in
 it. A launch in that boot then reads the entry with the same doubt and
 waits for the next restart, even when the mode was already off before the
 agent's switch-off. The record has that boot before the mode goes off, so
@@ -414,7 +414,7 @@ asleep, shows no such thing, and neither does a reading of an earlier
 entry: the record goes with its entry, as the record of the mode does. If
 state.json refuses the record, this process holds it and the next write
 records it. An end does not let Quit go before then: "Restore incomplete"
-says Insomnia retries in 30 s and not to quit until state.json can be
+says Nightowl retries in 30 s and not to quit until state.json can be
 written, and Quit waits, as for a failed restore whose flag is owed. A
 crash, a forced quit or a lost disk before the record lands loses it, and
 the next launch writes the saved value over a 0, as before any reading.
@@ -427,7 +427,7 @@ not the old saved one. The app also retries the clear at the same pace,
 and reads and writes nothing for it, so a level the user lowers to 0
 meanwhile stays at 0. Quit waits for that clear: a launch after the quit
 would read the entry again, and would write the saved value over a 0 the
-user set since. "Restore incomplete" says Insomnia retries in 30 s and not
+user set since. "Restore incomplete" says Nightowl retries in 30 s and not
 to quit until state.json can be written, and Start is refused until the
 end goes through. A crash, a forced quit or a lost disk before the clear
 lands leaves the entry to the next launch, which reads the device again.
@@ -435,7 +435,7 @@ A device still at 0 there gets the saved value and both keys are cleared. A fail
 flag, and the entry is retried like any failed restore. If the flag cannot
 be cleared either, the disk still shows a flagged entry, which backstop.sh
 and uninstall.sh pass over, so the app keeps the end itself. "Restore
-incomplete" says Insomnia retries in 30 s, the app retries the write and
+incomplete" says Nightowl retries in 30 s, the app retries the write and
 the owed flag together, and Quit waits until one of them lands. A write
 that lands while state.json still refuses the clear settles the entry in
 this process, with only the clear owed, and Quit waits for that clear as
@@ -443,7 +443,7 @@ above. A launch or
 re-read with no session whose write fails is ended as for a dirty journal,
 so the agent is armed for it, or the app keeps it while the flag is still
 owed. A write whose clear is owed is done all the same: the second write
-2 s later still goes out, and a display written under Insomnia's Low Power
+2 s later still goes out, and a display written under Nightowl's Low Power
 Mode still owes its write after the mode, as the clear would have
 journaled. A lid close that can read the device clears the flag too: it
 keeps the earlier saved value while the device reads 0, and saves the new
@@ -454,7 +454,7 @@ none is taken while an entry is journaled. A kept keyboard 0 from an older
 version is obsolete: a close that reads 0 leaves it flagged, and the open
 discards it without a write. For the display that level must be trusted:
 the last sample, the value owed after the mode, or a current read taken
-with the panel awake and Insomnia's Low Power Mode not on at any point in
+with the panel awake and Nightowl's Low Power Mode not on at any point in
 the run, nor over the entry since the Mac last started. Without one, the close leaves the entry flagged and the panel as
 it is. A rescaled, dimmed or asleep read is not the user's level, and the
 saved value may not be either, since the user may have set one by hand.
@@ -484,7 +484,7 @@ save rather than the one the menu showed. Each save has an ID of its own
 compares it with the journal on disk under the lock, so a later save with
 the same values, written by this or another copy of the app, is not
 dropped. An entry written before entries had an ID has none and is
-compared by its values. While Insomnia runs, a device that
+compared by its values. While Nightowl runs, a device that
 connects again gets its volume back at once (a CoreAudio device-list
 listener), or at the next lid open if a session is running with the lid
 closed. Each device change reads the journal on disk under the lock, so a
@@ -497,7 +497,7 @@ A restore that fails on a connected device, or a cleared entry that cannot
 be written, is reported and the entry stays. It makes the end incomplete,
 as any failed restore does. The recovery agent keeps these entries but
 cannot restore CoreAudio settings, so the incomplete-restore notification
-says Insomnia tries again itself. That retry runs in process after 30 s,
+says Nightowl tries again itself. That retry runs in process after 30 s,
 reads the journal again and checks the lid again. A device change that
 could not run at all (the recovery lock was busy, a `sudo pmset` left
 running still held it, or state.json did not decode) is retried the same
@@ -522,7 +522,7 @@ Freeze scope rules:
   automatically; they can be put on the explicit list by hand. With the
   toggle off the explicit list is the whole scope.
 - Hard denylist that can never be frozen, from either scope: `com.apple.*`,
-  Insomnia itself, Docker Desktop (handled by the Docker rule), and any bundle
+  Nightowl itself, Docker Desktop (handled by the Docker rule), and any bundle
   id in the agent list (below).
 - Built-in protected set (`FreezePlanner.builtInProtected`, checked through
   `isBuiltInProtected`): editors and agent hosts (VS Code and Insiders,
@@ -566,12 +566,12 @@ Freeze scope rules:
   carries it. If the app dies before the confirming write, the stopped
   pids stay journaled without identity and are reported for a person to
   check.
-- Only pids Insomnia stopped are resumed. An app launched while the lid is
+- Only pids Nightowl stopped are resumed. An app launched while the lid is
   closed is left alone.
 - Electron apps are stopped as a whole process tree (main + helpers), found
   via the responsible-pid relationship, so no helper keeps spinning.
 
-Display and keyboard backlight are handled by Insomnia, not by the hardware.
+Display and keyboard backlight are handled by Nightowl, not by the hardware.
 The September 16, 2026 audit (docs/release-validation.md) found that the
 sleep guard (`pmset -a disablesleep 1`) removes the only path by which macOS
 turns the built-in panel and keyboard backlight off on clamshell close: that
@@ -587,7 +587,7 @@ a relaunch, runs only for such an entry. A keyboard that can be read but
 journals no level is journaled as 0 for it when nothing else is, as
 described below. With "Keep the screen on and
 unlocked" on it is not made at all: a display that sleeps locks the screen,
-and Insomnia's own assertion would refuse it anyway. Display brightness 0 does not
+and Nightowl's own assertion would refuse it anyway. Display brightness 0 does not
 switch the keyboard backlight off; it is set separately. Both values are journaled before they are changed
 and restored on open, session end, Quit, or reconcile with the lid open; the
 backstop keeps the entries and only the app restores them (private
@@ -600,19 +600,19 @@ never starts sooner) and the panel is awake (`CGDisplayIsAsleep`, else it
 reads the idle-dim value) or the keyboard backlight is neither suppressed by
 display sleep (it reads 0) nor idle-dimmed, and the app keeps the last trusted
 reading of each, sampled every 30 s with the lid open, at start, 3 s after
-each lid open, and just before Insomnia switches Low Power Mode on itself.
+each lid open, and just before Nightowl switches Low Power Mode on itself.
 The display at the close event is never the user's value when it can be
 avoided: the lid coming down covers the ambient light sensor and
 auto-brightness has already pulled the panel down by the time the close is
 reported (measured 0.75 to 0.335 with the user at the keyboard, so the idle
 rule alone does not catch it), and Low Power Mode rescales it (0.75 reads
 0.5). So the display journals the last open-lid sample; without one, the
-value a lid open restored under Insomnia's own Low Power Mode if that is
+value a lid open restored under Nightowl's own Low Power Mode if that is
 still journaled as owed and the mode still ours (the app relaunched under
 the mode, so the new sampler has nothing and is held); only without either
 the current read,
 dim or not, since a dim panel on open beats a black one.
-While Low Power Mode is on because Insomnia switched it on (the journal's
+While Low Power Mode is on because Nightowl switched it on (the journal's
 `lowPowerSetByUs`), the display sample is held: the panel reads the mode's
 value, and the sample taken just before the mode went on is the one to
 restore. The hold follows the journal on disk: after a `lowpowermode 0`
@@ -658,9 +658,9 @@ asynchronously after the wake and can override the first write; that second
 write is canceled if another current lid close starts in the meantime, even
 when an already-zero keyboard creates no new journal entry, and superseded
 by any newer restore. A display restore
-written while Insomnia's own Low Power Mode was on is journaled as
+written while Nightowl's own Low Power Mode was on is journaled as
 `displayRestoredUnderLowPower` and written once more, then re-asserted the
-same way, right after Insomnia switches the mode off (lid open, charger,
+same way, right after Nightowl switches the mode off (lid open, charger,
 thermal recovery or session end), because the mode's end rescales the panel
 and can leave it elsewhere than the value written under it. That second
 write is owed only while the panel still reads what was written (within
@@ -679,8 +679,8 @@ state.json refuses to clear the owed write itself, written or dropped,
 that clear is owed too, so no later journal write brings the value back. The
 sample the display journals dates from the last 30 s window in which the
 user was active with the lid open and the panel awake, and is held from
-before Insomnia's own Low Power Mode: a brightness change made within 30 s
-of closing the lid, or under that mode, is not seen. If Insomnia is not running when the lid
+before Nightowl's own Low Power Mode: a brightness change made within 30 s
+of closing the lid, or under that mode, is not seen. If Nightowl is not running when the lid
 opens, the brightness-up key restores the panel. Bluetooth is still left alone (needed for Instant
 Hotspot, and negligible).
 
@@ -705,7 +705,7 @@ last held while it was on was the battery or thermal floor, not the lid.
   lists them. Only the agent list can also turn App Nap off; only an
   explicit freeze-list entry overrides the built-in protection.
 - Turning App Nap off is opt-in (`disableAppNapForAgents`, default off). With
-  it off Insomnia never writes another app's preferences. With it on, session
+  it off Nightowl never writes another app's preferences. With it on, session
   start reads each listed app's `NSAppSleepDisabled`, journals the previous
   value (absent, true or false) in `appNapOverrides`, and only then writes
   `YES`. A journal write failure means no preference write. An app whose key
@@ -735,7 +735,7 @@ last held while it was on was the battery or thermal floor, not the lid.
   occluded, which is every window once the lid is closed with no external
   display. Timers drop to 1 Hz, animation frames stop, pages report hidden.
   This can break computer-use and browser-use agents.
-  - Insomnia inspects running Chromium processes for
+  - Nightowl inspects running Chromium processes for
     `--disable-backgrounding-occluded-windows` and
     `--disable-renderer-backgrounding`.
   - If a browser is running without them, the menu shows a warning and a
@@ -755,7 +755,7 @@ last held while it was on was the battery or thermal floor, not the lid.
     read counts the same way: nothing confirms the pid is still the
     browser, so the arguments are not read and nothing is quit. The quit
     goes to the `NSRunningApplication` objects found before the read, never
-    to a fresh lookup of their pids. After the quit request Insomnia waits up
+    to a fresh lookup of their pids. After the quit request Nightowl waits up
     to 10 s, then reads the running list again: any instance still there
     means nothing is launched, and the notification says the browser may
     still quit later and then has to be opened by hand.
@@ -770,8 +770,8 @@ last held while it was on was the battery or thermal floor, not the lid.
     relaunched" notification naming the browser, and the same text stays
     in the menu as a warning line, one per browser, until that browser's
     next relaunch or the next session start, because notifications can be
-    off for Insomnia.
-    Insomnia is the notification center's delegate and asks for banners
+    off for Nightowl.
+    Nightowl is the notification center's delegate and asks for banners
     while it is frontmost, as it is right after the confirmation; without
     that, macOS drops a notification from the frontmost app. The process
     side (`BrowserProcessControlling`) is injected so the tests quit
@@ -829,7 +829,7 @@ The notifications say what the mode waits for ("Low Power Mode stays on until
 it is back to nominal") and why it went off ("Thermal state is back to
 nominal.", or "Thermal rules are off." when Settings turned them off). While
 the mode is on for heat the display sample is held, as for any Low Power Mode
-Insomnia switched on (section 4), so the hold can keep it longer than before.
+Nightowl switched on (section 4), so the hold can keep it longer than before.
 Nothing but `nominal` and the session end bounds the hold: a Mac that stays at
 `fair`, under a long build say, keeps the mode, and the display sample held,
 until the session ends. That is deliberate. A Mac at `fair` after `serious` is
@@ -846,7 +846,7 @@ up. Turning it off while the mode is held at `fair` releases the mode at once
 ("Thermal state is back to fair."), and the enable notification says "Low
 Power Mode is on until it cools down." instead of naming `nominal`.
 
-Insomnia does not enable Low Power Mode merely because a session starts; the
+Nightowl does not enable Low Power Mode merely because a session starts; the
 causes are the battery floor, a serious thermal state, and (by default) a closed
 lid. One evaluation owns the mode: it is switched off only when no cause holds.
 Battery and thermal rules run only while the app is alive; they are not
@@ -857,7 +857,7 @@ and the sleep guard refuses it. `disablesleep 0` only clears the kernel's flag
 (`kPowerEventUserDisabledSleep` in xnu's `IOPMrootDomain.cpp`) and does not
 look at the lid again. So these ends and the timer end owe a sleep, as does
 a launch reconcile that finds session.json expired (section 8: the app
-relaunched before the recovery agent's next run removed it), and Insomnia
+relaunched before the recovery agent's next run removed it), and Nightowl
 calls `IOPMSleepSystem` (no root needed) if
 `AppleClamshellState` is true and the lid is not closed at a desk (section 3:
 no external display online). It does not read `AppleClamshellCausesSleep`,
@@ -907,7 +907,7 @@ ends owe nothing.
   answers from the scan cache in about 20 ms, so the other spelling costs a
   join almost nothing. It is looked for among the networks the first scan
   heard, which holds for an iPhone hotspot, since it broadcasts its name. The password is read from
-  the login Keychain (generic-password service `insomnia-hotspot`, account =
+  the login Keychain (generic-password service `nightowl-hotspot`, account =
   SSID) and is never placed in process arguments. Retry with backoff (5 s,
   10 s, 20 s, 30 s, then every 30 s) until the path is satisfied or the
   session ends.
@@ -939,8 +939,8 @@ ends owe nothing.
   keychain changes that only by replacing the item (an in-place update of
   `kSecAttrAccess` did not return when tried on a throwaway keychain): the
   new password is put beside the old item, in the same keychain, under
-  service `insomnia-hotspot.replacing`; the old item is deleted; the new
-  one is renamed to `insomnia-hotspot`. Reads use only `insomnia-hotspot`
+  service `nightowl-hotspot.replacing`; the old item is deleted; the new
+  one is renamed to `nightowl-hotspot`. Reads use only `nightowl-hotspot`
   and never fall back to a `.replacing` item: which save left it, and
   whether that save finished, is not known, and one in another keychain
   on the search list can hold an older password. Until the delete, the
@@ -994,27 +994,27 @@ ends owe nothing.
   reads the SSID configured then. Inside a save, the unlock prompt is
   followed by a fresh read of the item and its keychain.
 - macOS 26 requires Location Services permission before CoreWLAN exposes SSIDs
-  or returns results for an SSID-filtered scan. Insomnia requests when-in-use
+  or returns results for an SSID-filtered scan. Nightowl requests when-in-use
   access when the hotspot is saved, a configured session starts or the user
   clicks Allow… in the hotspot settings, never at launch. Mac apps have no when-in-use state: a grant settles on
   `authorizedAlways`, and System Settings records it as Location Services
-  access for Insomnia (Settings says so next to Location access). Insomnia never starts location updates. The real hotspot join still
+  access for Nightowl (Settings says so next to Location access). Nightowl never starts location updates. The real hotspot join still
   must be run on the Mac in the manual test plan below.
 - Log lines naming the SSID, a tmux target or a process reach the unified
   log as private data (`Log.swift`), so `log show` prints `<private>` for
-  the body; `insomnia.log` keeps the text.
+  the body; `nightowl.log` keeps the text.
 - Each outage is logged with start, end, and gap length to
-  `~/Library/Logs/Insomnia/handoffs.log`. The menu shows the last gap.
-  Like `insomnia.log`, the file is owner-only (0600) and is renamed to
+  `~/Library/Logs/Nightowl/handoffs.log`. The menu shows the last gap.
+  Like `nightowl.log`, the file is owner-only (0600) and is renamed to
   `handoffs.log.1` once it passes 1 MiB (`OwnerOnly.swift`). A log the user
   replaced with a symlink is never rotated, so the cap does not hold for it:
   the file it points to is the user's to manage.
 - Path satisfied again after a gap longer than `nudgeThreshold` (default 90 s):
   - For every configured tmux target (`session:window.pane`), resolve the
     concrete pane, read its state and then its mark, the pane-scoped user
-    option `@insomnia-nudge` (`show-options -qpv -t %N`, without `-A`, so
+    option `@nightowl-nudge` (`show-options -qpv -t %N`, without `-A`, so
     a session or window option never counts). Only a pane marked `on` by
-    the user (`tmux set-option -p -t <target> @insomnia-nudge on`) gets
+    the user (`tmux set-option -p -t <target> @nightowl-nudge on`) gets
     `tmux send-keys -t %N continue`, followed by `Enter` only when
     `tmuxNudgePressesEnter` is on (default off). An unmarked pane is
     skipped and logged. So is a pane whose foreground program
@@ -1031,10 +1031,10 @@ ends owe nothing.
 Invariants:
 
 - Sleep is never disabled unless a session file with a future `endsAt` exists.
-- Every change Insomnia makes is in RuntimeState before it is made, and is
+- Every change Nightowl makes is in RuntimeState before it is made, and is
   undone from RuntimeState, never from memory.
 
-Reconcile runs at every Insomnia launch:
+Reconcile runs at every Nightowl launch:
 
 1. Session file missing or expired → restore journaled changes: sleep,
    verified owned processes, Low Power Mode if we set it, saved audio, and
@@ -1078,9 +1078,9 @@ Reconcile runs at every Insomnia launch:
    the sleep guard, then resume observers. If the lid is open, restore recorded
    lid-close actions. Arming or restoration errors must remain visible.
 3. `pmset -g` reports `SleepDisabled 1` with no session and no journal
-   entry → leave it. Step 1 has already undone a disable Insomnia journaled,
+   entry → leave it. Step 1 has already undone a disable Nightowl journaled,
    so this one was set by something else (a hand-run `pmset`, another tool)
-   and is not Insomnia's to undo. Log it, show it on the menu's warning line,
+   and is not Nightowl's to undo. Log it, show it on the menu's warning line,
    and notify once per launch with `sudo pmset -a disablesleep 0`. A bit
    still journaled as ours after a failed restore is retried from the
    journal, not from this check. Nothing clears `SleepDisabled` without a
@@ -1170,14 +1170,14 @@ Backstop, independent of the app:
   passes on the bundle (a bounded call, like its other calls under the
   lock). Once recovery is confirmed and print confirms the agent unloaded,
   it removes the bundle and install.sh's leftovers beside it, by their exact
-  names: `.Insomnia.app.previous`, and `.Insomnia.app.staging.<pid>.<six
+  names: `.Nightowl.app.previous`, and `.Nightowl.app.staging.<pid>.<six
   letters and digits>` directories whose run `kill -0` reports gone (a live
   run's stays). Symlinks and other names are left. With the agent plist go
   the candidate plists install.sh and the app stage it from
-  (`com.insomnia.backstop.candidate-*` in `.com.insomnia.backstop.staging`
+  (`com.nightowl.backstop.candidate-*` in `.com.nightowl.backstop.staging`
   and, from older builds, in the LaunchAgents directory).
 - install.sh and uninstall.sh find the running app with `pgrep -x
-  Insomnia`, which also finds Kong's Insomnia API client. They tell the two
+  Nightowl`, which also finds Kong's Insomnia API client. They tell the two
   apart by the signature of the code each process runs, not by a path that
   argv[0] can set. A pid is skipped, with one line naming it, only when
   `codesign --verify -R='anchor apple generic and identifier
@@ -1234,11 +1234,11 @@ Backstop, independent of the app:
   a display write owed after the mode, by the journal last read, the clear
   is owed the same way and the write waits for the first transaction that
   reads the journal again; it is made only if that journal, with the owed
-  edits, still owes the same value with the mode not Insomnia's. The
+  edits, still owes the same value with the mode not Nightowl's. The
   unreadable file is not written. Any other exit confirms nothing. When the command
   exits the app retries a pending end.
   Otherwise it reads Low Power Mode under the lock. A mode that reads on
-  stays journaled as Insomnia's. A mode that reads off is switched off
+  stays journaled as Nightowl's. A mode that reads off is switched off
   once more with the app's own `lowpowermode 0`, and the ownership is
   cleared only when that exits 0. A claim from before the Mac last started
   that it clears this way counts as the mode's end in this boot, as for
@@ -1261,8 +1261,8 @@ Backstop, independent of the app:
   line goes once a later write clears that entry, unless a newer error
   has replaced it.
   Process recovery must verify identity and avoid resuming a process that
-  Insomnia did not stop. The entries that record `startedAtMicros` go to
-  the app binary in one call (`Insomnia --resume-frozen
+  Nightowl did not stop. The entries that record `startedAtMicros` go to
+  the app binary in one call (`Nightowl --resume-frozen
   <seconds>`, with one line `<pid> <startedAt> <startedAtMicros>
   <bootSession>` per entry on standard input, which has no size limit,
   answered before AppKit starts),
@@ -1277,7 +1277,7 @@ Backstop, independent of the app:
   they run the script. That holds after the user moves the bundle out of
   ~/Applications. A checkout's copy uses the installed app in
   ~/Applications. The script runs the binary only when the bundle's
-  `Info.plist` declares `InsomniaResumeFrozenVersion` equal to the version
+  `Info.plist` declares `NightowlResumeFrozenVersion` equal to the version
   the script speaks, because an older build would start the menu bar app
   instead; otherwise it keeps those entries. It runs it with the same
   30-second limit as a power command, then SIGTERM, then SIGKILL, and with
@@ -1296,14 +1296,14 @@ Backstop, independent of the app:
 - The shell does not restore CoreAudio settings. Saved audio must remain in
   the journal for the app to restore. Legacy `savedOutputVolume` /
   `savedMuted` count as unresolved, so the run exits 1 and says to open
-  Insomnia. `savedAudioOutputs` entries are checked for shape and kept, but
+  Nightowl. `savedAudioOutputs` entries are checked for shape and kept, but
   on their own they leave the journal clean: an entry can wait days for its
   device, the app's menu shows it, and an error every minute would only
   fill the log. The backstop logs them once, when it removes a session or
   undoes something else. Uninstall must preserve recovery tools
   and state when restoration is incomplete, including saved audio. It runs
   the checkout's backstop only when the installed app declares the
-  `InsomniaResumeFrozenVersion` that backstop speaks; otherwise it runs the
+  `NightowlResumeFrozenVersion` that backstop speaks; otherwise it runs the
   backstop installed with that app, when there is one: the copy sealed in
   its bundle, once `codesign --verify --strict` passes, else the writable
   copy older installs left in Application Support. With no installed copy
@@ -1330,13 +1330,13 @@ Backstop, independent of the app:
 `UNUserNotificationCenter`: session ended (with reason), extend reminder 5
 minutes before end, battery floor reached, battery unreadable twice in a row,
 thermal action taken, network gap recovered (with nudge summary), sleep
-restored by backstop, sleep disabled by something other than Insomnia
+restored by backstop, sleep disabled by something other than Nightowl
 (reconcile step 3, once per launch), lid-close settings changed by the
 one-time update (section 10, once).
 
 ### 10. Settings
 
-JSON at `~/Library/Application Support/Insomnia/config.json`, edited through a
+JSON at `~/Library/Application Support/Nightowl/config.json`, edited through a
 settings window: one page grouped by what happens (When the lid closes, Apps,
 Battery, If Wi-Fi drops, General), with Edit Apps and the hotspot in sheets. Like `session.json`, `state.json` and the recovery
 lock it is created mode 0600 in a 0700 directory, and a looser file from an
@@ -1365,7 +1365,7 @@ older build is tightened when the app reads it:
   says the switch does nothing there (section 11, One-click start).
 - keep the screen on and unlocked on/off (default off; section 2)
 - play a sound when you start or end a session (`sessionSounds`), default
-  off, also for a config.json without the key. Off, Insomnia generates,
+  off, also for a config.json without the key. Off, Nightowl generates,
   loads and plays nothing. On, a start or an end asked for in the menu bar
   plays a short tone, made in memory with no sound file. Nothing plays for
   an end the user did not ask for (the timer, the backstop, Quit, a battery
@@ -1399,7 +1399,7 @@ older build is tightened when the app reads it:
   config.json names on both lists keeps running, as the freeze planner
   treats it: Edit Apps and the summary lines on the page show it once, as
   Keep running, and picking either rule for it takes it off the other list.
-  An Apple app, Insomnia or Docker Desktop on the freeze list alone shows as
+  An Apple app, Nightowl or Docker Desktop on the freeze list alone shows as
   Keep running too, since the planner never freezes it from the list, and
   its row's Remove button clears the entry.
 - `lowPowerFloor`, `endFloor`, thermal rules on/off, the heat hold
@@ -1425,7 +1425,7 @@ older build is tightened when the app reads it:
   Settings, and the app turns the flag off rather than put it back; no
   record (a config from before the field) means this is the first launch
   of a build that keeps one, itself a reinstall, so the app registers once
-  and records the install. A user who removed the item while Insomnia's
+  and records the install. A user who removed the item while Nightowl's
   switch stayed on gets it back that once.
   Every outcome is logged. The Settings switch shows what macOS has on
   file (enabled or waiting for approval), not the flag; a registration
@@ -1444,9 +1444,9 @@ older build is tightened when the app reads it:
   and says so. "Check for updates" sends two unauthenticated GETs to
   `api.github.com` when clicked, with the installed version as their user
   agent and nothing else about the Mac, and never on its own:
-  `repos/KING-MOI/Insomnia/releases/latest` for the release GitHub marks
+  `repos/KING-MOI/Nightowl/releases/latest` for the release GitHub marks
   Latest, the stable channel as docs/install.md defines it (a 404 means
-  none), and the first page of `repos/KING-MOI/Insomnia/releases` for the
+  none), and the first page of `repos/KING-MOI/Nightowl/releases` for the
   newest nightly, the prerelease there with the latest
   `nightly-<date>-<commit>` tag. The stable release has its own request
   because the list is paged newest first and a nightly is published on
@@ -1464,7 +1464,7 @@ older build is tightened when the app reads it:
 
 Reference: the attached screenshot (coffee icon, then three rounded pill
 fields "Hours", "Minutes", "Seconds", each with a small "?" badge, sitting
-directly in the menu bar). Insomnia copies that interaction and the feel.
+directly in the menu bar). Nightowl copies that interaction and the feel.
 
 **Idle state.** A single coffee-cup status item. Nothing else in the bar.
 
@@ -1545,7 +1545,7 @@ request until the end restores sleep, or hands what is left to an armed
 recovery agent after `disablesleep 0` failed, the panel shows Ending… with
 its countdown and ring disabled and takes no keys, then the pills. That
 includes the wait for a retry after a restore command outlived its timeout,
-or after an end left work that only Insomnia can finish. An end that changed
+or after an end left work that only Nightowl can finish. An end that changed
 nothing leaves the session active: a busy recovery lock (retried in 30 s),
 an unreadable state.json (waits for a person) or a command still holding the
 lock (retried when it exits). The panel then shows Ending… with its
@@ -1571,13 +1571,13 @@ The panel uses AppKit's native popover material and window shadow with rounded
 corners. It has no title bar or popover arrow. Its left edge aligns with the
 persistent status button, with a 2-point gap below the menu bar. The app clamps
 the panel to the display when space is limited.
-Opening the panel activates Insomnia, as the Pills do, so typed digits reach
+Opening the panel activates Nightowl, as the Pills do, so typed digits reach
 the panel and not the app in front. Clicking the icon again, clicking outside,
 or pressing Escape dismisses it; switching modes also closes it. Escape, a
 second click on the icon and a mode change give focus back to the app the user
 was in. Switching apps or opening Settings leaves focus where it went. An
 outside click that brings no app forward gives it back. The right-click menu
-gives it back after it closes, if no window of Insomnia took it. During an extension, Escape first returns
+gives it back after it closes, if no window of Nightowl took it. During an extension, Escape first returns
 from the input pills to the running countdown, matching the shared controls.
 The window fits only the active row, shrinking for the timer and expanding for
 duration entry or a wrapped error. Its content-size animation uses the same
@@ -1750,8 +1750,8 @@ downwards, never sideways. Top to bottom:
    (`HotspotFailoverRow`, left out while a hotspot password warning
    shows), Wi-Fi (the
    network name, or "On" when Location is not allowed, with the reason as
-   a tooltip), and only when they apply, Low Power Mode that Insomnia
-   switched on ("Low Power Mode set by Insomnia"), frozen apps, paused
+   a tooltip), and only when they apply, Low Power Mode that Nightowl
+   switched on ("Low Power Mode set by Nightowl"), frozen apps, paused
    Docker and the last network gap.
 5. **Warnings.** One row each with an orange triangle: a session that is
    not holding sleep (including one whose sleep check, section 1, could not
@@ -1769,7 +1769,7 @@ downwards, never sideways. Top to bottom:
    to about two lines). The original text, paths and all, is the row's
    tooltip and accessibility hint, and a click opens the row to it. The
    error strings themselves are unchanged in the log and notifications.
-6. **Footer.** Settings… (Cmd-,) and Quit Insomnia (Cmd-Q). A build with
+6. **Footer.** Settings… (Cmd-,) and Quit Nightowl (Cmd-Q). A build with
    the scripts/simulate-lid.sh watcher compiled in also shows a small
    muted "Lid simulation build" badge here, the full marker as its
    tooltip, so it is never mistaken for a normal one.
@@ -1888,8 +1888,8 @@ Battery watts are read from `AppleSmartBattery` (`InstantAmperage` ×
   opening; 0.8 / 0.95 closing) so the lid lift and the lash hand-over are
   seen; the pupil scales in from 0.6 on its own bouncier spring 0.2 s later
   and eases out to 0.6 on close, clipped to the lens.
-- Typing activates Insomnia and its key panel; closing the pills returns
-  focus to the previous app if Insomnia still owns it. Switching to another
+- Typing activates Nightowl and its key panel; closing the pills returns
+  focus to the previous app if Nightowl still owns it. Switching to another
   window closes the pills without taking focus back. The right-click menu
   also closes the pills before it starts handling keys.
 - The countdown changes its digits in one step, with no content transition
@@ -1925,10 +1925,10 @@ transitions. If it feels like a web dropdown, it is wrong.
 ## Repository layout
 
 ```
-Insomnia/
+Nightowl/
   Package.swift
-  Sources/Insomnia/
-    InsomniaApp.swift
+  Sources/Nightowl/
+    NightowlApp.swift
     Model/
       Config.swift
       RuntimeState.swift
@@ -1982,7 +1982,7 @@ Insomnia/
       StatusItemController.swift
       StatusRootView.swift
       StatusSource.swift
-  Tests/InsomniaTests/
+  Tests/NightowlTests/
     BrowserThrottleTests.swift
     ConfigTests.swift
     DisplayPowerTests.swift
@@ -2007,20 +2007,20 @@ Insomnia/
     uninstall.sh           reverse all of the above, restore sleep
     backstop.sh            standalone restore from JSON
     simulate-lid.sh        file trigger for the lid-close action path (debug and
-                           INSOMNIA_LID_SIMULATION=1 builds only)
+                           NIGHTOWL_LID_SIMULATION=1 builds only)
   docs/spec.md
   docs/install.md          install, upgrade and uninstall steps
   docs/lid-close.md        lid-close actions and their defaults
   docs/recovery.md         recovery details and manual attention
   docs/extras.md           hotspot, tmux, Chrome, configuration and privacy
-  skills/                  agent playbooks: install-insomnia, maintain-insomnia
+  skills/                  agent playbooks: install-nightowl, maintain-nightowl
   README.md                short overview that links the docs
 ```
 
 ## Install
 
 ```
-git clone https://github.com/KING-MOI/Insomnia.git && cd Insomnia
+git clone https://github.com/KING-MOI/Nightowl.git && cd Nightowl
 ./scripts/install.sh      # asks for sudo once, for the sudoers file
 ```
 
@@ -2046,7 +2046,7 @@ validation record.
    every session at login. Saved audio requires the app to reopen.
 5. **Freeze.** Slack and WhatsApp on list, close lid, `ps -o stat` shows `T`
    for their whole trees. Open lid → running, reconnected, no relaunch.
-6. **Docker rule.** Rule on. No containers → paused on close; insomnia.log
+6. **Docker rule.** Rule on. No containers → paused on close; nightowl.log
    has "first check found no running container" and "second check found no
    running container". One container → untouched, log has "first check found
    containers running". A container started between the two checks →
@@ -2057,7 +2057,7 @@ validation record.
    and choose End: the notification and the menu name the headset as still
    muted. Plug it back in → its volume comes back and the menu line goes.
    Repeat, but Quit with the headset unplugged, plug it in, then launch
-   Insomnia → restored at launch.
+   Nightowl → restored at launch.
 8. **Chrome occlusion.** Lid closed, Playwright attached to headed Chrome:
    read `document.visibilityState` and measure `setInterval` drift. Repeat with
    both flags. Decide whether feature 5's browser section stays.
@@ -2067,7 +2067,7 @@ validation record.
    confirm the hotspot join works within ~10 s and a Claude Code turn in flight
    completes.
 10. **Nudge.** Mark a disposable pane (`tmux set-option -p -t <target>
-   @insomnia-nudge on`). Gap forced above threshold → that pane receives
+   @nightowl-nudge on`). Gap forced above threshold → that pane receives
    "continue" and no Enter; an unmarked listed pane receives nothing;
    with "Press Enter after continue" on, the line is submitted.
    Notification posted.
@@ -2083,7 +2083,7 @@ validation record.
     with the lid open using `scripts/simulate-lid.sh closed` then `open`
     during a session; the log shows `lid SIMULATED closed (file trigger)`.
     That needs a build with the watcher compiled in (installed with
-    `INSOMNIA_LID_SIMULATION=1 ./scripts/install.sh`, which `build-app.sh`
+    `NIGHTOWL_LID_SIMULATION=1 ./scripts/install.sh`, which `build-app.sh`
     reads; install.sh refuses it with `--app`; it logs "Lid
     simulation build" at launch). A normal install ignores the trigger:
     the watcher is compiled out so a file written by any other program

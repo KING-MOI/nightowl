@@ -5,62 +5,62 @@ The [README](../README.md#optional-extras) has a summary of each.
 ## iPhone hotspot handoff
 
 Set **System Settings → Wi-Fi → Ask to join hotspots → Automatically**, then
-open Insomnia Settings and choose **Set Up…** under If Wi-Fi drops. Pick the
+open Nightowl Settings and choose **Set Up…** under If Wi-Fi drops. Pick the
 hotspot from the networks this Mac has joined, or type its name; a straight
 apostrophe still finds an iPhone's curly one. Then enter the password and
 click Save. The password is
-stored in the login Keychain under service `insomnia-hotspot`. Insomnia uses
+stored in the login Keychain under service `nightowl-hotspot`. Nightowl uses
 CoreWLAN to find and join that network without putting the password in process
 arguments. An iPhone names its hotspot with a typographic apostrophe
 (`Name’s iPhone`), and a Mac keyboard types a straight one; when the name as
-typed finds nothing, Insomnia looks for it with the other apostrophe too.
+typed finds nothing, Nightowl looks for it with the other apostrophe too.
 
-The Keychain item's access list names only the build of Insomnia that saved
-it, and Insomnia reads it with Keychain prompts switched off, so a join during
+The Keychain item's access list names only the build of Nightowl that saved
+it, and Nightowl reads it with Keychain prompts switched off, so a join during
 an outage never raises a dialog. The installer signs each build ad hoc, which
 gives every install a new identity: after a reinstall the saved password is
-unreadable by the new build. Insomnia then skips the join, shows "Hotspot
+unreadable by the new build. Nightowl then skips the join, shows "Hotspot
 password unreadable by this build" in the right-click menu and in Settings,
 and sends one notification per outage. The warning belongs to the SSID it was
 read for. Change the SSID and it goes, and Settings checks the new SSID's
 saved password instead. Enter the password again in Settings and save; the
 save writes the new password before it removes the old item,
-and macOS may ask you to allow Insomnia to delete the old one, or to unlock
+and macOS may ask you to allow Nightowl to delete the old one, or to unlock
 the login keychain. If that save is cut off after the old item is gone,
-the password reads as missing and you enter it once more: Insomnia never
+the password reads as missing and you enter it once more: Nightowl never
 reads a half-finished save's copy. The Save button reads "Saving…" until
 macOS answers, and "Saved" only while the SSID and password fields still
 hold what was saved. A join that was waiting while you changed the SSID is
 dropped, and the next retry uses the new SSID. A Settings read that was
 waiting is dropped too, and Settings reads the new SSID's password instead.
 Anything you type in the password field while Settings is still loading the
-saved one stays, even if you delete it again. The rest of Insomnia,
+saved one stays, even if you delete it again. The rest of Nightowl,
 including the battery floor and End, keeps running while the dialog is open.
 A build signed with a stable identity would keep the item readable across
 upgrades.
 
-macOS requires Location Services permission to reveal network names. Insomnia
+macOS requires Location Services permission to reveal network names. Nightowl
 requests it when you click **Allow…** next to Location access in the hotspot
 sheet, on the first hotspot save, or when starting a session with a
 configured hotspot, never at launch. If denied, the same row opens
 **Privacy & Security → Location Services**. Mac apps have no
 when-in-use grant, so System Settings records it as Location Services access
-for Insomnia. Insomnia uses it only to read Wi-Fi network names through
+for Nightowl. Nightowl uses it only to read Wi-Fi network names through
 CoreWLAN and never requests your location.
 
 ## tmux nudge
 
-After a long outage (90 seconds by default) Insomnia types `continue` into
+After a long outage (90 seconds by default) Nightowl types `continue` into
 each configured tmux target. The default target list is empty, and a listed
 pane is only nudged if you have marked it yourself, with a pane option that
 is read again before every send:
 
 ```bash
-tmux set-option -p -t <session:window.pane> @insomnia-nudge on
+tmux set-option -p -t <session:window.pane> @nightowl-nudge on
 ```
 
 Mark a dedicated, disposable agent pane, not one you type in, because pending
-text is opaque to Insomnia. A marked pane whose agent has exited and left a
+text is opaque to Nightowl. A marked pane whose agent has exited and left a
 shell prompt is skipped, because the keys would go to the shell. tmux also
 shows the shell while a shell runs the agent without `exec`, as in
 `tmux new 'agent; exec zsh'` or a launcher script, so such a pane is skipped
@@ -75,19 +75,19 @@ pending automation but cannot retract keystrokes already sent.
 ## Chrome, Chromium, Arc and Comet throttling
 
 Chromium browsers can throttle windows macOS considers occluded, including
-when the lid is closed. Insomnia detects supported running browsers missing
+when the lid is closed. Nightowl detects supported running browsers missing
 `--disable-backgrounding-occluded-windows` or `--disable-renderer-backgrounding`
 and offers **Relaunch [browser] unthrottled** in the right-click menu. The item
 asks first, because the browser is quit and its windows and tabs come back only
 if it is set to reopen them on startup. If the browser has quit by the time you
-confirm, nothing is quit or launched and a notification says so. Insomnia reads the browser's profile
+confirm, nothing is quit or launched and a notification says so. Nightowl reads the browser's profile
 arguments before quitting and carries them over. If it cannot read them, cannot
 read the kernel's start time that ties them to the browser, or the browser
 quits on its own while they are read, it quits nothing and says so. If the
 browser has not quit after 10 s, nothing is launched, and a notification says
 so: a second copy beside the first would be worse than a throttled one. The
 quit request stands, so a browser that closes later has to be opened again by
-hand. After `open` returns, Insomnia waits up to 5 s for the browser to show up
+hand. After `open` returns, Nightowl waits up to 5 s for the browser to show up
 as running and notifies if it does not. Each of these reasons also stays in the
 right-click menu as a warning line, one per browser, until that browser's next
 relaunch or the next session, so it is there even with notifications off. A
@@ -97,39 +97,39 @@ app will keep working while the lid is closed.
 
 ## Configuration and privacy
 
-Configuration lives in `~/Library/Application Support/Insomnia/config.json`.
-Use Settings for the app's controls; [Config.swift](../Sources/Insomnia/Model/Config.swift)
+Configuration lives in `~/Library/Application Support/Nightowl/config.json`.
+Use Settings for the app's controls; [Config.swift](../Sources/Nightowl/Model/Config.swift)
 defines the full configuration and defaults. Local logs can contain SSIDs,
 process metadata, and tmux targets. Check them before sharing publicly.
-Lines the app writes to `insomnia.log` also go to the unified log with their
+Lines the app writes to `nightowl.log` also go to the unified log with their
 bodies marked private, so `log show` and other local programs see `<private>`
 in place of the text unless private data logging is enabled on the Mac. The
-backstop's lines go only to `insomnia.log`, which keeps the full text of both.
-The files in Application Support/Insomnia and Logs/Insomnia (config, session,
+backstop's lines go only to `nightowl.log`, which keeps the full text of both.
+The files in Application Support/Nightowl and Logs/Nightowl (config, session,
 journal, recovery lock, the record of a power command left running, the two
 logs) are owner-only, mode 0600 with those two directories 0700, and one left
 looser by an older build is tightened the next time the app or the backstop
-opens it. Insomnia sets only these modes and
+opens it. Nightowl sets only these modes and
 leaves any access control list (ACL) on these files and folders as it is, so
 an ACL someone added, or one inherited from a parent folder, can still give
 another account access (`ls -le` shows it). The LaunchAgent plist and the installed
 scripts hold no private data and keep the modes the installer gives them.
-`insomnia.log` and `handoffs.log` are capped at 1 MiB: a
-log past the cap is renamed to `insomnia.log.1` or `handoffs.log.1`,
+`nightowl.log` and `handoffs.log` are capped at 1 MiB: a
+log past the cap is renamed to `nightowl.log.1` or `handoffs.log.1`,
 replacing the previous copy, and a new file starts. The cap does not apply
-to a log you replace with a symlink. Insomnia writes through the link and
+to a log you replace with a symlink. Nightowl writes through the link and
 never rotates it, since the rename would move the link and not the file it
 points to, and it logs that once. You set up the link, so trimming the file
 it points to is up to you.
 
-Insomnia makes one kind of network request, and only when you click "Check
+Nightowl makes one kind of network request, and only when you click "Check
 for updates" in Settings > General: two unauthenticated GETs at api.github.com,
 for the release this repository marks Latest and for the first page of its
 releases list, with the installed version as their user agent and nothing
 else about the Mac. It never checks on its own, opens the releases page only
 on request, and never downloads or installs a build.
 
-`INSOMNIA_HOME` relocates app support files, logs, and LaunchAgents for testing.
+`NIGHTOWL_HOME` relocates app support files, logs, and LaunchAgents for testing.
 It is **not an installation sandbox**: installation/removal also involves the
 app bundle and sudoers rule. The installer refuses a relocated home. See
-[Paths.swift](../Sources/Insomnia/Store/Paths.swift) for the layout.
+[Paths.swift](../Sources/Nightowl/Store/Paths.swift) for the layout.
