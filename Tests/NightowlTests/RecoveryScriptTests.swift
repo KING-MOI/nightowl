@@ -6342,9 +6342,9 @@ final class RecoveryScriptTests: XCTestCase {
         XCTAssertTrue(r.stderr.contains("still running"), r.stderr)
     }
 
-    // MARK: - Kong's Insomnia API client
+    // MARK: - Kong's Nightowl API client
 
-    /// Kong's Insomnia API client runs an executable named Insomnia too, so
+    /// Kong's Nightowl API client runs an executable named Nightowl too, so
     /// `pgrep -x Nightowl` finds it. This is its pid.
     private let clientPid = 7002
 
@@ -6355,7 +6355,7 @@ final class RecoveryScriptTests: XCTestCase {
     }
 
     private var ignoredLine: String {
-        "Ignoring pid \(clientPid): it is Kong's Insomnia API client (com.insomnia.app, team FX44YY62GV), not this app."
+        "Ignoring pid \(clientPid): it is Kong's Nightowl API client (com.nightowl.app, team FX44YY62GV), not this app."
     }
 
     private func count(_ line: String, in text: String) -> Int {
@@ -6390,7 +6390,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// sends no quit, names the pid it ignores once, and removes everything.
     /// Every check (the quit step, under the lock, before the removal) finds
     /// the client and ignores it.
-    func testUninstallIgnoresTheInsomniaAPIClient() throws {
+    func testUninstallIgnoresTheNightowlAPIClient() throws {
         try fx.installMachinery()
         try fx.writeState(#"{"sleepDisabledByUs":true,"lowPowerSetByUs":false,"frozenProcesses":[],"dockerFrozen":false}"#)
         try fx.nightowlProcesses([(clientPid, 0)])
@@ -6513,7 +6513,7 @@ final class RecoveryScriptTests: XCTestCase {
     /// With only the API client running, install sends no quit and does not
     /// wait: pgrep runs once before the lock and once under it, each check
     /// ignores the client, and the new build is installed.
-    func testInstallIgnoresTheInsomniaAPIClient() throws {
+    func testInstallIgnoresTheNightowlAPIClient() throws {
         try writePreviousPair()
         try fx.nightowlProcesses([(clientPid, 0)])
         fx.setMode("pgrep", "0\n")   // the client runs the whole time
@@ -6683,9 +6683,9 @@ private final class ScriptFixture {
     /// exits 0 (see nightowlProcesses).
     let appPid = 7001
     /// The code requirement install.sh and uninstall.sh check a pid pgrep
-    /// found against, to tell Kong's Insomnia API client from this app. The
+    /// found against, to tell Kong's Nightowl API client from this app. The
     /// fake codesign accepts no other.
-    static let apiClientRequirement = #"anchor apple generic and identifier "com.insomnia.app" and certificate leaf[subject.OU] = "FX44YY62GV""#
+    static let apiClientRequirement = #"anchor apple generic and identifier "com.nightowl.app" and certificate leaf[subject.OU] = "FX44YY62GV""#
 
     private let fm = FileManager.default
 

@@ -408,7 +408,7 @@ Settings > General opens with the Menu bar picker: Pills (the default), Compact,
 - The installed recovery agent on the supported macOS release: launchd bootstraps its plist, loads it at login and runs its verify-then-exec command line, and the agent recovers a session after the app crashes
 - The installed agent's plist is the one install.sh wrote
 - A source install end to end: `./scripts/install.sh` builds, signs and installs the app with the administrator password, and stops while a running app refuses to quit
-- Install and uninstall with Kong's Insomnia API client open: `codesign --verify -R='anchor apple generic and identifier "com.insomnia.app" and certificate leaf[subject.OU] = "FX44YY62GV"' <pid>` exits 0 for the client and 3 for this app; each script prints "Ignoring pid <pid>: it is Kong's Insomnia API client (com.insomnia.app, team FX44YY62GV), not this app." once, leaves the client running and goes on; with this app running too, each still asks it to quit and stops while it refuses, on a working Mac
+- Install and uninstall with Kong's Nightowl API client open: `codesign --verify -R='anchor apple generic and identifier "com.nightowl.app" and certificate leaf[subject.OU] = "FX44YY62GV"' <pid>` exits 0 for the client and 3 for this app; each script prints "Ignoring pid <pid>: it is Kong's Nightowl API client (com.nightowl.app, team FX44YY62GV), not this app." once, leaves the client running and goes on; with this app running too, each still asks it to quit and stops while it refuses, on a working Mac
 
 ### Release channels
 
