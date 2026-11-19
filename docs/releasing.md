@@ -143,8 +143,8 @@ in System Settings > Privacy & Security.
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-gh attestation verify <zip> -R KING-MOI/Nightowl \
-  --signer-workflow KING-MOI/Nightowl/.github/workflows/release.yml \
+gh attestation verify <zip> -R pekkaiscool/Nightowl \
+  --signer-workflow pekkaiscool/Nightowl/.github/workflows/release.yml \
   --source-ref <ref> --source-digest <commit>
 ```
 

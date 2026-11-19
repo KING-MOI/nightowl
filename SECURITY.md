@@ -79,8 +79,8 @@ nightly prereleases (`nightly-*` tags built from `main`), are built by the
 Release workflow from the commit they name and published with a
 `SHA256SUMS` file and a GitHub build provenance attestation. Verify both
 before installing (`shasum -a 256 -c SHA256SUMS`,
-`gh attestation verify <zip> -R KING-MOI/Nightowl --signer-workflow
-KING-MOI/Nightowl/.github/workflows/release.yml --source-ref <ref>
+`gh attestation verify <zip> -R pekkaiscool/Nightowl --signer-workflow
+pekkaiscool/Nightowl/.github/workflows/release.yml --source-ref <ref>
 --source-digest <commit>`, with `refs/tags/v<version>` or `refs/heads/main`
 as the ref and the full commit the release was built from as the digest; the
 release notes carry the command filled in). `install.sh

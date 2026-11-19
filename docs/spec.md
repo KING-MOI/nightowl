@@ -1444,9 +1444,9 @@ older build is tightened when the app reads it:
   and says so. "Check for updates" sends two unauthenticated GETs to
   `api.github.com` when clicked, with the installed version as their user
   agent and nothing else about the Mac, and never on its own:
-  `repos/KING-MOI/Nightowl/releases/latest` for the release GitHub marks
+  `repos/pekkaiscool/Nightowl/releases/latest` for the release GitHub marks
   Latest, the stable channel as docs/install.md defines it (a 404 means
-  none), and the first page of `repos/KING-MOI/Nightowl/releases` for the
+  none), and the first page of `repos/pekkaiscool/Nightowl/releases` for the
   newest nightly, the prerelease there with the latest
   `nightly-<date>-<commit>` tag. The stable release has its own request
   because the list is paged newest first and a nightly is published on
@@ -2020,7 +2020,7 @@ Nightowl/
 ## Install
 
 ```
-git clone https://github.com/KING-MOI/Nightowl.git && cd Nightowl
+git clone https://github.com/pekkaiscool/Nightowl.git && cd Nightowl
 ./scripts/install.sh      # asks for sudo once, for the sudoers file
 ```
 

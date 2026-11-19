@@ -14,7 +14,7 @@
 # at a time: each pass deletes every clone and runner the loop names.
 set -u
 
-REPO=${NIGHTOWL_MINI_REPO:-KING-MOI/Nightowl}
+REPO=${NIGHTOWL_MINI_REPO:-pekkaiscool/Nightowl}
 TART=${TART:-$HOME/.local/bin/tart}
 BASE=${NIGHTOWL_MINI_BASE:-nightowl-ci-base}
 LOG_DIR=${NIGHTOWL_MINI_LOGS:-$HOME/Library/Logs/nightowl-mini}

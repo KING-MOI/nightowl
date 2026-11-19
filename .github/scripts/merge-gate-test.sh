@@ -15,8 +15,8 @@ command -v jq >/dev/null || {
   exit 2
 }
 
-REPO=KING-MOI/Nightowl
-OWNER=KING-MOI
+REPO=pekkaiscool/Nightowl
+OWNER=pekkaiscool
 BOT='github-actions[bot]'
 HEAD_SHA=1111111111111111111111111111111111111111
 MAIN_SHA=2222222222222222222222222222222222222222
@@ -264,7 +264,7 @@ baseline() {
   echo '[]' | json "commits_${HEAD_SHA}_statuses"
   pr_json someone '[{"name": "accepted"}]'
   codex_bot "$HEAD_SHA" false
-  label_events '[["labeled", "KING-MOI"]]'
+  label_events '[["labeled", "pekkaiscool"]]'
   changed docs/guide.md
   head_tree '[{"path": "docs", "mode": "040000"}, {"path": "docs/guide.md", "mode": "100644"}]'
   echo "{\"sha\": \"$MAIN_SHA\"}" | json commits_main
@@ -307,7 +307,7 @@ test_second_evaluate_posts_nothing() {
 }
 
 test_owner_rejection_stands_on_their_own_config_change() {
-  pr_json KING-MOI '[{"name": "accepted"}]'
+  pr_json pekkaiscool '[{"name": "accepted"}]'
   changed .github/workflows/ci.yml
   seed "$OWNER" config failure "drop the new job"
   seed "$OWNER" evidence failure "the log shows no sleep"
@@ -341,7 +341,7 @@ test_owner_decision_on_a_later_page_counts() {
   # OK to page 2.
   jq -n '[range(200; 100; -1) | {id: ., context: "other/check", state: "success", creator: {login: "app[bot]"}}]' |
     json "commits_${HEAD_SHA}_statuses.1"
-  echo '[{"id": 50, "context": "merge-gate/evidence", "state": "success", "creator": {"login": "KING-MOI"},
+  echo '[{"id": 50, "context": "merge-gate/evidence", "state": "success", "creator": {"login": "pekkaiscool"},
     "description": "report checked", "target_url": null}]' | json "commits_${HEAD_SHA}_statuses.2"
   run 0 evaluate 5
   gate evidence success "report checked"
@@ -356,7 +356,7 @@ test_fork_config_change_waits_for_the_owner() {
 }
 
 test_owner_config_change_passes() {
-  pr_json KING-MOI '[{"name": "accepted"}]'
+  pr_json pekkaiscool '[{"name": "accepted"}]'
   changed .github/workflows/ci.yml Package.swift
   run 0 evaluate 5
   gate config success "come from the owner"
@@ -596,7 +596,7 @@ test_someone_elses_edit_of_the_summary_fails() {
   comments graphql-comments false \
     "$(comment 10:00:00 11:00:00 chatgpt-codex-connector "$OWNER" "$(summary_body "$HEAD_SHA" false)")"
   run 0 evaluate 5
-  gate codex-bot failure "KING-MOI made the newest edit to a Codex bot comment"
+  gate codex-bot failure "pekkaiscool made the newest edit to a Codex bot comment"
 }
 
 test_removing_the_marker_from_the_newest_summary_fails() {
@@ -607,7 +607,7 @@ test_removing_the_marker_from_the_newest_summary_fails() {
     "$(comment 09:00:00 - chatgpt-codex-connector - "$(summary_body "$HEAD_SHA" false)")" \
     "$(comment 10:00:00 11:00:00 chatgpt-codex-connector "$OWNER" "Codex found issues.")"
   run 0 evaluate 5
-  gate codex-bot failure "KING-MOI made the newest edit to a Codex bot comment"
+  gate codex-bot failure "pekkaiscool made the newest edit to a Codex bot comment"
 }
 
 test_a_malformed_state_still_reaches_the_edit_check() {
@@ -617,7 +617,7 @@ test_a_malformed_state_still_reaches_the_edit_check() {
     "$(comment 09:00:00 10:00:00 chatgpt-codex-connector chatgpt-codex-connector "$(summary_body "$HEAD_SHA" true)")" \
     "$(comment 09:30:00 11:00:00 chatgpt-codex-connector "$OWNER" '<!-- codex-review-state:v1 {"code_review":"invalid"} -->')"
   run 0 evaluate 5
-  gate codex-bot failure "KING-MOI made the newest edit to a Codex bot comment"
+  gate codex-bot failure "pekkaiscool made the newest edit to a Codex bot comment"
   # In the bot's own summary, such a state waits.
   comments graphql-comments false "$(comment 12:00:00 - chatgpt-codex-connector - '<!-- codex-pull-request-review-summary -->
 <!-- codex-review-state:v1 {"code_review":"invalid","security_review":7} -->')"
@@ -694,7 +694,7 @@ test_newest_codex_bot_summary_wins_across_pages() {
 }
 
 test_label_from_someone_else_waits() {
-  label_events '[["labeled", "KING-MOI"], ["unlabeled", "someone"], ["labeled", "someone"]]'
+  label_events '[["labeled", "pekkaiscool"], ["unlabeled", "someone"], ["labeled", "someone"]]'
   run 0 evaluate 5
   gate accepted pending "not added by the owner (labeled someone)"
 }
@@ -852,7 +852,7 @@ test_check_sees_an_owner_failure_posted_during_a_run() {
 test_check_sees_a_label_removed_before_the_workflow_runs() {
   all_gates_pass
   pr_json someone '[]'
-  label_events '[["labeled", "KING-MOI"], ["unlabeled", "KING-MOI"]]'
+  label_events '[["labeled", "pekkaiscool"], ["unlabeled", "pekkaiscool"]]'
   run 1 check 5
   says "posted success, but it is now pending: waiting for the owner's accepted label"
 }
@@ -936,7 +936,7 @@ test_an_owner_failure_in_capitals_counts() {
   run 0 evaluate 5
   [ "$(posts evidence)" = 0 ] || fail "posted evidence $(posts evidence) times over the owner's failure"
   run 1 check 5
-  says "FAIL  merge-gate/evidence                      failure: the log shows no sleep [KING-MOI]"
+  says "FAIL  merge-gate/evidence                      failure: the log shows no sleep [pekkaiscool]"
 }
 
 test_check_counts_a_ci_status_in_lower_case() {
@@ -987,7 +987,7 @@ test_check_fails_if_any_status_with_the_name_fails() {
 test_merge_stops_if_the_label_goes_during_the_check() {
   all_gates_pass
   later pulls_5 pr_json someone '[]'
-  later issues_5_events label_events '[["labeled", "KING-MOI"], ["unlabeled", "KING-MOI"]]'
+  later issues_5_events label_events '[["labeled", "pekkaiscool"], ["unlabeled", "pekkaiscool"]]'
   run 2 merge 5
   says "merge-gate/accepted now works out to pending: waiting for the owner's accepted label; run check again"
   says "NOT READY: #5 at 1111111, 1 failing"

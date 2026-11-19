@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KING-MOI/nightowl"><strong>GitHub</strong></a> ·
+  <a href="https://github.com/pekkaiscool/nightowl"><strong>GitHub</strong></a> ·
   <a href="#install"><strong>Install</strong></a> ·
   <a href="#using-it"><strong>Using it</strong></a> ·
   <a href="#what-happens-when-the-lid-closes"><strong>Lid close</strong></a> ·
@@ -46,7 +46,7 @@ Requires macOS 26 or later on an Apple Silicon Mac.
 Paste this into your coding agent:
 
 ```text
-Install the latest stable Nightowl release by following https://github.com/KING-MOI/Nightowl/blob/main/skills/install-nightowl/SKILL.md. If a step needs my password, give me the command to run in Terminal.
+Install the latest stable Nightowl release by following https://github.com/pekkaiscool/Nightowl/blob/main/skills/install-nightowl/SKILL.md. If a step needs my password, give me the command to run in Terminal.
 ```
 
 For the newest nightly, write "the newest Nightowl nightly prerelease" in
@@ -65,7 +65,7 @@ Needs Xcode with Swift 6.2 or later. Replace `v<version>` with the latest
 stable tag, or a nightly tag for the newest code:
 
 ```bash
-git clone --branch v<version> --depth 1 https://github.com/KING-MOI/Nightowl.git
+git clone --branch v<version> --depth 1 https://github.com/pekkaiscool/Nightowl.git
 cd Nightowl
 ./scripts/install.sh
 open "$HOME/Applications/Nightowl.app"
@@ -323,11 +323,11 @@ settings. See [Contributing](CONTRIBUTING.md), [Security reporting](SECURITY.md)
 
 ## Star history
 
-<a href="https://www.star-history.com/?repos=KING-MOI%2FNightowl&amp;type=date&amp;legend=top-left">
+<a href="https://www.star-history.com/?repos=pekkaiscool%2FNightowl&amp;type=date&amp;legend=top-left">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=KING-MOI/nightowl&amp;type=date&amp;theme=dark&amp;legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=KING-MOI/nightowl&amp;type=date&amp;legend=top-left" />
-    <img alt="Star history for KING-MOI/Nightowl" src="https://api.star-history.com/svg?repos=KING-MOI/nightowl&amp;type=date&amp;legend=top-left" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=pekkaiscool/nightowl&amp;type=date&amp;theme=dark&amp;legend=top-left" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=pekkaiscool/nightowl&amp;type=date&amp;legend=top-left" />
+    <img alt="Star history for pekkaiscool/Nightowl" src="https://api.star-history.com/svg?repos=pekkaiscool/nightowl&amp;type=date&amp;legend=top-left" />
   </picture>
 </a>
 

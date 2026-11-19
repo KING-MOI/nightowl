@@ -5,11 +5,11 @@ description: Check on, troubleshoot, or uninstall an installed Nightowl (the mac
 
 # Maintain Nightowl
 
-Reference pages in https://github.com/KING-MOI/Nightowl:
-[docs/recovery.md](https://github.com/KING-MOI/Nightowl/blob/main/docs/recovery.md),
-[docs/install.md](https://github.com/KING-MOI/Nightowl/blob/main/docs/install.md),
-[docs/lid-close.md](https://github.com/KING-MOI/Nightowl/blob/main/docs/lid-close.md) and
-[docs/extras.md](https://github.com/KING-MOI/Nightowl/blob/main/docs/extras.md).
+Reference pages in https://github.com/pekkaiscool/Nightowl:
+[docs/recovery.md](https://github.com/pekkaiscool/Nightowl/blob/main/docs/recovery.md),
+[docs/install.md](https://github.com/pekkaiscool/Nightowl/blob/main/docs/install.md),
+[docs/lid-close.md](https://github.com/pekkaiscool/Nightowl/blob/main/docs/lid-close.md) and
+[docs/extras.md](https://github.com/pekkaiscool/Nightowl/blob/main/docs/extras.md).
 
 ## Rules
 
